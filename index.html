@@ -998,6 +998,19 @@ const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes',
 const CATEGORIAS_PLATILLO = ['Plato fuerte','Antojito','Bebida','Postre','Extra'];
 const fmtMXN = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:2 });
 
+/* ★★★ URL FIJA DEL WEB APP DE GOOGLE APPS SCRIPT ★★★
+   Pega aquí tu URL /exec para que TODOS los dispositivos se conecten
+   automáticamente sin tener que configurar nada en cada uno.
+   Ejemplo: const SCRIPT_URL_FIJA = 'https://script.google.com/macros/s/AKfycb…/exec'; */
+const SCRIPT_URL_FIJA = '';
+
+// URL efectiva de sincronización: la configurada en el dispositivo o, si no hay, la fija
+function getScriptUrl(){
+  const cfg = DB.get(LS.config, {});
+  const propia = (cfg.scriptUrl || '').trim();
+  return propia || (SCRIPT_URL_FIJA.indexOf('https') === 0 ? SCRIPT_URL_FIJA : '');
+}
+
 // Configuración por defecto (usuarios iniciales incluidos; editables en Config)
 function configDefault(){
   return {
@@ -1105,7 +1118,7 @@ document.getElementById('modal-fondo').addEventListener('click', e => { if (e.ta
 
 // POST genérico al Web App; devuelve el JSON de respuesta o lanza error
 async function postScript(payload){
-  const url = getConfig().scriptUrl;
+  const url = getScriptUrl();
   if (!url) throw new Error('Sin URL configurada');
   const r = await fetch(url, { method:'POST', body: JSON.stringify(payload) });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1128,7 +1141,7 @@ function marcarSincronizado(tipo, id){
 }
 // Intenta subir un registro individual en segundo plano (no bloquea la UI)
 function sincronizarRegistro(tipo, obj){
-  if (!getConfig().scriptUrl){ marcarPendiente(tipo, obj.id); return; }
+  if (!getScriptUrl()){ marcarPendiente(tipo, obj.id); return; }
   postScript({ action: tipo === 'venta' ? 'addVenta' : 'addEgreso', data: obj })
     .then(res => {
       if (res && res.status === 'ok'){ marcarSincronizado(tipo, obj.id); registrarSyncExitosa(); }
@@ -1138,8 +1151,7 @@ function sincronizarRegistro(tipo, obj){
 }
 // Sube en lote todo lo pendiente
 async function sincronizarTodo(){
-  const cfg = getConfig();
-  if (!cfg.scriptUrl){ toast('Configura primero la URL de Google Sheets', 'alerta'); return; }
+  if (!getScriptUrl()){ toast('Configura primero la URL de Google Sheets', 'alerta'); return; }
   const pend = getPendientes();
   if (!pend.length){
     await descargarDeSheets(false);      // nada que subir: solo baja lo nuevo
@@ -1174,15 +1186,15 @@ function registrarSyncExitosa(){
 function actualizarBadgeSync(){
   const badge = document.getElementById('badge-sync');
   const n = getPendientes().length;
-  const cfg = getConfig();
-  if (!cfg.scriptUrl){
+  const url = getScriptUrl();
+  if (!url){
     badge.className = 'local'; badge.textContent = '● solo local';
   } else if (n > 0){
     badge.className = 'pendiente'; badge.textContent = '● ' + n + ' pendiente' + (n === 1 ? '' : 's');
   } else {
     badge.className = ''; badge.textContent = '● sincronizado';
   }
-  document.getElementById('banner-sheets').style.display = cfg.scriptUrl ? 'none' : 'flex';
+  document.getElementById('banner-sheets').style.display = url ? 'none' : 'flex';
   const cp = document.getElementById('cfg-pendientes');
   if (cp) cp.textContent = n + ' registro' + (n === 1 ? '' : 's') + ' pendiente' + (n === 1 ? '' : 's') + ' de sincronizar';
 }
@@ -1247,7 +1259,7 @@ function irA(id){
   document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
   document.getElementById('vista-' + id).classList.add('activa');
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('activa', t.dataset.vista === id));
-  if (id === 'mesas')     renderMesas();
+  if (id === 'mesas'){ renderMesas(); pullMesas(); }
   if (id === 'dashboard') renderDashboard();
   if (id === 'historial') renderHistorial();
   if (id === 'exportar')  renderResumenExport();
@@ -1789,9 +1801,19 @@ function renderHistorial(){
 async function eliminarRegistro(id){
   const ok = await confirmar('¿Eliminar registro?', 'Esta acción no se puede deshacer. El registro se borrará solo de este dispositivo.');
   if (!ok) return;
-  const llave = histEstado.tab === 'ventas' ? LS.ventas : LS.egresos;
+  const tipo = histEstado.tab === 'ventas' ? 'venta' : 'egreso';
+  const llave = tipo === 'venta' ? LS.ventas : LS.egresos;
   DB.set(llave, DB.get(llave, []).filter(r => r.id !== id));
   DB.set(LS.pendientes, getPendientes().filter(p => p.id !== id));
+  // Lápida: evita que el pull lo reviva, y propaga el borrado a Sheets
+  const borrados = DB.get('frida_borrados', []);
+  borrados.push({ tipo: tipo, id: id });
+  DB.set('frida_borrados', borrados.slice(-500));
+  if (getScriptUrl()){
+    postScript({ action:'deleteRegistro', data: { tipo: tipo, id: id } })
+      .then(res => { if (res && res.status === 'ok') DB.set('frida_borrados', DB.get('frida_borrados', []).filter(b => b.id !== id)); })
+      .catch(() => {});
+  }
   actualizarBadgeSync();
   toast('Registro eliminado');
   renderHistorial();
@@ -1913,7 +1935,7 @@ let catalogoEdit = [];   // copia editable del catálogo mientras se trabaja en 
 // Pinta todos los bloques de configuración con los valores guardados
 function renderConfig(){
   const cfg = getConfig();
-  document.getElementById('cfg-url').value = cfg.scriptUrl || '';
+  document.getElementById('cfg-url').value = cfg.scriptUrl || (SCRIPT_URL_FIJA.indexOf('https') === 0 ? SCRIPT_URL_FIJA : '');
   document.getElementById('cfg-nombre').value = cfg.nombre;
   document.getElementById('cfg-inicio').value = cfg.inicio;
   document.getElementById('cfg-meta-margen').value = cfg.metaMargen;
@@ -1947,7 +1969,13 @@ document.getElementById('btn-probar').addEventListener('click', async () => {
   try {
     const r = await fetch(url);
     const j = await r.json();
-    if (j && j.status === 'ok'){ msg.className = 'msg-ok'; msg.textContent = '✓ Conexión exitosa'; }
+    if (j && j.status === 'ok'){
+      const v = Number(j.version) || 1;
+      msg.className = v >= 3 ? 'msg-ok' : 'msg-error';
+      msg.textContent = v >= 3
+        ? '✓ Conexión exitosa (script v' + v + ')'
+        : '⚠ Conectado, pero el Apps Script es v' + v + ' — pega el código nuevo y crea una NUEVA VERSIÓN de la implementación';
+    }
     else throw new Error('Respuesta inesperada del script');
   } catch(err){
     msg.className = 'msg-error';
@@ -1997,8 +2025,10 @@ document.getElementById('btn-guardar-catalogo').addEventListener('click', () => 
   const msg = document.getElementById('cat-msg');
   msg.className = 'msg-ok'; msg.textContent = '✓ Catálogo guardado (' + limpio.length + ' platillos)';
   setTimeout(() => msg.textContent = '', 3000);
-  if (getConfig().scriptUrl){
-    postScript({ action:'savePlatillos', data: limpio })
+  const tsCat = Date.now();
+  DB.set('frida_platillos_ts', tsCat);
+  if (getScriptUrl()){
+    postScript({ action:'savePlatillos', data: { platillos: limpio, ts: tsCat } })
       .then(() => toast('✓ Catálogo respaldado en Sheets', 'exito'))
       .catch(() => toast('El catálogo se guardó localmente; no se pudo subir a Sheets', 'alerta'));
   }
@@ -2015,6 +2045,7 @@ document.getElementById('btn-guardar-params').addEventListener('click', () => {
   cfg.diasOperacion = [...document.querySelectorAll('#cfg-dias input:checked')].map(i => i.value);
   if (!cfg.diasOperacion.length) cfg.diasOperacion = ['Jueves','Viernes','Sábado','Domingo'];
   DB.set(LS.config, cfg);
+  empujarConfig();
   const msg = document.getElementById('params-msg');
   msg.className = 'msg-ok'; msg.textContent = ' ✓ Guardado';
   setTimeout(() => msg.textContent = '', 3000);
@@ -2037,6 +2068,7 @@ document.getElementById('tabla-usuarios').addEventListener('click', async e => {
     const nueva = prompt('Nueva contraseña para "' + u + '":');
     if (nueva && nueva.length >= 4){
       const cfg = getConfig(); cfg.usuarios[u].pass = nueva; DB.set(LS.config, cfg);
+      empujarConfig();
       toast('✓ Contraseña actualizada', 'exito');
     } else if (nueva !== null) toast('La contraseña debe tener al menos 4 caracteres', 'alerta');
     return;
@@ -2050,6 +2082,7 @@ document.getElementById('tabla-usuarios').addEventListener('click', async e => {
     const ok = await confirmar('¿Eliminar usuario?', 'Se eliminará el acceso de "' + u + '".');
     if (!ok) return;
     delete cfg.usuarios[u]; DB.set(LS.config, cfg);
+    empujarConfig();
     renderUsuarios(); toast('Usuario eliminado');
   }
 });
@@ -2064,6 +2097,7 @@ document.getElementById('btn-add-usuario').addEventListener('click', () => {
   if (cfg.usuarios[user]){ msg.textContent = 'Ese usuario ya existe'; return; }
   cfg.usuarios[user] = { pass, rol, nombre };
   DB.set(LS.config, cfg);
+  empujarConfig();
   msg.textContent = '';
   ['u-user','u-nombre','u-pass'].forEach(id => document.getElementById(id).value = '');
   renderUsuarios(); toast('✓ Usuario "' + user + '" agregado', 'exito');
@@ -2270,16 +2304,24 @@ document.getElementById('preguntas-rapidas').addEventListener('click', e => {
    de modo que todos los dispositivos vean la misma información.
    ============================================================ */
 let _pullEnCurso = false;
-// Fusiona registros remotos con los locales (por ID, sin duplicar)
+// Fusiona registros remotos con los locales por ID: agrega los nuevos,
+// respeta lápidas de borrado y elimina lo que fue borrado en otro dispositivo
 function fusionarRemotos(llave, remotos){
-  const local = DB.get(llave, []);
+  if (!Array.isArray(remotos)) return { nuevos: 0, eliminados: 0 };
+  const borrados = new Set(DB.get('frida_borrados', []).map(b => b.id));
+  const idsRemotos = new Set(remotos.map(r => r && r.id));
+  let local = DB.get(llave, []);
+  const antes = local.length;
+  // Registros ya sincronizados que desaparecieron del Sheet = borrados en otro dispositivo
+  local = local.filter(r => !r.sincronizado || idsRemotos.has(r.id));
+  const eliminados = antes - local.length;
   const ids = new Set(local.map(r => r.id));
   let nuevos = 0;
-  (remotos || []).forEach(r => {
-    if (r && r.id && !ids.has(r.id)){ r.sincronizado = true; local.push(r); nuevos++; }
+  remotos.forEach(r => {
+    if (r && r.id && !ids.has(r.id) && !borrados.has(r.id)){ r.sincronizado = true; local.push(r); nuevos++; }
   });
-  if (nuevos) DB.set(llave, local);
-  return nuevos;
+  if (nuevos || eliminados) DB.set(llave, local);
+  return { nuevos: nuevos, eliminados: eliminados };
 }
 // Re-pinta la vista activa cuando llegan datos nuevos
 function refrescarVistaActual(){
@@ -2287,20 +2329,43 @@ function refrescarVistaActual(){
   if (vistaActual === 'historial') renderHistorial();
   if (vistaActual === 'exportar')  renderResumenExport();
 }
-// Descarga todo de Sheets y lo integra; silencioso = sin toasts de error
+// Descarga TODO de Sheets (registros, catálogo, config, mesas) y lo integra
+let _avisoScriptViejo = false;
 async function descargarDeSheets(avisar){
-  const cfg = getConfig();
-  if (!cfg.scriptUrl || _pullEnCurso) return;
+  if (!getScriptUrl() || _pullEnCurso) return;
   _pullEnCurso = true;
   try {
     const res = await postScript({ action:'getAll' });
     if (res && res.status === 'ok'){
-      const nuevos = fusionarRemotos(LS.ventas, res.ventas) + fusionarRemotos(LS.egresos, res.egresos);
-      if (nuevos > 0){
-        refrescarVistaActual();
-        toast('↓ ' + nuevos + ' registro' + (nuevos === 1 ? '' : 's') + ' nuevo' + (nuevos === 1 ? '' : 's') + ' desde Sheets', 'exito');
+      const rv = fusionarRemotos(LS.ventas, res.ventas);
+      const re = fusionarRemotos(LS.egresos, res.egresos);
+      const nuevos = rv.nuevos + re.nuevos;
+      // Catálogo compartido: gana el guardado más reciente
+      const tsCatRem = Number(res.platillosTs) || 0;
+      if (Array.isArray(res.platillos) && res.platillos.length && tsCatRem > (Number(DB.get('frida_platillos_ts', 0)) || 0)){
+        DB.set(LS.platillos, res.platillos);
+        DB.set('frida_platillos_ts', tsCatRem);
+        if (vistaActual === 'config') renderConfig();
       }
+      // Configuración compartida: metas, días de operación y usuarios
+      if (res.config && Number(res.config.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
+        const cfgL = getConfig();
+        ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => {
+          if (res.config[k] !== undefined) cfgL[k] = res.config[k];
+        });
+        DB.set(LS.config, cfgL);
+        if (vistaActual === 'config') renderConfig();
+      }
+      // Salón de mesas en tiempo real
+      if (Array.isArray(res.mesas)) fusionarMesas(res.mesas);
+      if (nuevos + rv.eliminados + re.eliminados > 0) refrescarVistaActual();
+      if (nuevos > 0) toast('↓ ' + nuevos + ' registro' + (nuevos === 1 ? '' : 's') + ' nuevo' + (nuevos === 1 ? '' : 's') + ' desde Sheets', 'exito');
       registrarSyncExitosa();
+    } else if (res && res.status === 'error' && /desconocida/i.test(res.message || '')){
+      if (!_avisoScriptViejo){
+        _avisoScriptViejo = true;
+        toast('⚠ El Apps Script de tu Sheet es una versión vieja: pega el código v3 y crea una NUEVA VERSIÓN de la implementación', 'alerta');
+      }
     } else if (avisar) toast('Sheets respondió con error al descargar', 'alerta');
   } catch(err){
     if (avisar) toast('No se pudo descargar de Sheets: ' + err.message, 'alerta');
@@ -2317,7 +2382,7 @@ const LIBERANDO_SEG = 8;      // segundos de "limpieza" antes de quedar libre
 function getMesas(){
   let m = DB.get('frida_mesas', null);
   if (!Array.isArray(m) || m.length !== NUM_MESAS){
-    m = Array.from({ length: NUM_MESAS }, (_, i) => ({ n: i+1, estado: 'libre', desde: null }));
+    m = Array.from({ length: NUM_MESAS }, (_, i) => ({ n: i+1, estado: 'libre', desde: null, ts: 0 }));
     DB.set('frida_mesas', m);
   }
   return m;
@@ -2361,6 +2426,7 @@ function accionMesa(n, a){
   if (a === 'ocupar'){ m.estado = 'ocupada'; m.desde = Date.now(); }
   if (a === 'liberar'){ m.estado = 'liberando'; m.desde = Date.now(); }
   if (a === 'listo'){ m.estado = 'libre'; m.desde = null; }
+  if (a !== 'comanda') m.ts = Date.now();
   if (a === 'comanda'){
     setMesas(mesas);
     irA('comanda');
@@ -2370,6 +2436,7 @@ function accionMesa(n, a){
   }
   setMesas(mesas);
   renderMesas();
+  empujarMesas();          // comparte el cambio con los demás dispositivos
 }
 // Reloj del salón: actualiza tiempos y concluye la limpieza automáticamente
 function tickMesas(){
@@ -2378,10 +2445,10 @@ function tickMesas(){
   let cambio = false;
   mesas.forEach(m => {
     if (m.estado === 'liberando' && Date.now() - m.desde > LIBERANDO_SEG * 1000){
-      m.estado = 'libre'; m.desde = null; cambio = true;
+      m.estado = 'libre'; m.desde = null; m.ts = Date.now(); cambio = true;
     }
   });
-  if (cambio){ setMesas(mesas); renderMesas(); return; }
+  if (cambio){ setMesas(mesas); renderMesas(); empujarMesas(); return; }
   mesas.forEach(m => {
     const el = document.querySelector('[data-t="' + m.n + '"]');
     if (el) el.textContent = m.estado === 'liberando' ? 'limpiando ' + transcurrido(m.desde) : transcurrido(m.desde);
@@ -2393,6 +2460,49 @@ document.getElementById('grid-mesas').addEventListener('click', e => {
   const card = e.target.closest('.mesa.libre');
   if (card) accionMesa(+card.dataset.n, 'ocupar');
 });
+
+/* ============================================================
+   MESAS COMPARTIDAS Y CONFIGURACIÓN COMPARTIDA (tiempo real)
+   ============================================================ */
+// Integra el estado remoto del salón: por mesa gana el cambio más reciente
+function fusionarMesas(remotas){
+  const mesas = getMesas();
+  let cambio = false;
+  (remotas || []).forEach(r => {
+    const m = mesas.find(x => x.n === Number(r.n));
+    if (m && Number(r.ts || 0) > Number(m.ts || 0)){
+      m.estado = r.estado || 'libre';
+      m.desde = r.desde ? Number(r.desde) : null;
+      m.ts = Number(r.ts) || 0;
+      cambio = true;
+    }
+  });
+  if (cambio){ setMesas(mesas); if (vistaActual === 'mesas') renderMesas(); }
+}
+// Sube el salón completo; el servidor fusiona por mesa y responde el estado vigente
+function empujarMesas(){
+  if (!getScriptUrl()) return;
+  postScript({ action:'saveMesas', data: getMesas() })
+    .then(res => { if (res && res.status === 'ok' && Array.isArray(res.mesas)) fusionarMesas(res.mesas); })
+    .catch(() => {});
+}
+// Consulta ligera del salón (se usa cada 10 s mientras se ve la vista de mesas)
+function pullMesas(){
+  if (!getScriptUrl() || !navigator.onLine) return;
+  postScript({ action:'getMesas' })
+    .then(res => { if (res && res.status === 'ok' && Array.isArray(res.mesas)) fusionarMesas(res.mesas); })
+    .catch(() => {});
+}
+// Comparte metas, días de operación y usuarios con todos los dispositivos
+function empujarConfig(){
+  const cfg = getConfig();
+  cfg.cfgTs = Date.now();
+  DB.set(LS.config, cfg);
+  if (!getScriptUrl()) return;
+  const compartida = {};
+  ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => compartida[k] = cfg[k]);
+  postScript({ action:'saveConfig', data: compartida }).catch(() => {});
+}
 
 /* ============================================================
    INICIALIZACIÓN
@@ -2416,13 +2526,15 @@ function iniciarApp(){
   // Reloj del salón de mesas (tiempos y fin de limpieza)
   setInterval(tickMesas, 1000);
   // Sincronización bidireccional: al arrancar sube pendientes y baja lo nuevo…
-  if (getConfig().scriptUrl && navigator.onLine){
+  if (getScriptUrl() && navigator.onLine){
     setTimeout(() => { getPendientes().length ? sincronizarTodo() : descargarDeSheets(false); }, 1200);
   }
-  // …y cada 60 segundos revisa si otros dispositivos registraron algo
+  // …cada 45 segundos revisa si otros dispositivos registraron algo…
   setInterval(() => {
-    if (getConfig().scriptUrl && navigator.onLine) descargarDeSheets(false);
-  }, 60000);
+    if (getScriptUrl() && navigator.onLine) descargarDeSheets(false);
+  }, 45000);
+  // …y el salón de mesas se refresca cada 10 segundos mientras lo tengas en pantalla
+  setInterval(() => { if (vistaActual === 'mesas') pullMesas(); }, 10000);
 }
 // Punto de entrada
 sembrarDatos();
@@ -2446,51 +2558,45 @@ sembrarDatos();
 </body>
 </html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     CÓDIGO GOOGLE APPS SCRIPT (v2, sincronización bidireccional)
-     Copiar TODO el bloque siguiente en Extensiones → Apps Script de tu
+     CÓDIGO GOOGLE APPS SCRIPT (v3 — sincronización total multi-dispositivo)
+     Copiar TODO el bloque siguiente en Extensiones → Apps Script del
      Google Sheet, reemplazando el código anterior, y actualizar la
-     implementación (Administrar implementaciones → nueva versión).
+     implementación (Administrar implementaciones → ✏ → Nueva versión).
      También se entrega como archivo separado: google_apps_script.gs
 ```javascript
 /**
  * ═══════════════════════════════════════════════════════════════
- *  GOOGLE APPS SCRIPT · La Casa de Frida y Diego  (v2)
- *  Backend de sincronización BIDIRECCIONAL para sistema_frida_diego.html
+ *  GOOGLE APPS SCRIPT · La Casa de Frida y Diego  (v3)
+ *  Backend de sincronización TOTAL multi-dispositivo:
+ *  ventas · egresos · catálogo · configuración · usuarios · MESAS
  *
- *  NOVEDAD v2: acción getAll → los dispositivos DESCARGAN los
- *  registros de la hoja, así todos ven la misma información.
- *
- *  INSTALACIÓN / ACTUALIZACIÓN:
+ *  ⚠ PASO OBLIGATORIO — sin esto los dispositivos NO se sincronizan:
  *  1. Abre tu Google Sheet → Extensiones → Apps Script
- *  2. BORRA el código anterior y pega TODO este archivo
- *  3. Implementar → Administrar implementaciones → ✏ editar →
+ *  2. BORRA todo el código anterior y pega TODO este archivo
+ *  3. Implementar → Administrar implementaciones → ✏ (lápiz) →
  *     Versión: "Nueva versión" → Implementar
- *     (si es la primera vez: Nueva implementación → Aplicación web ·
- *      Ejecutar como: Yo · Acceso: Cualquier persona)
- *  4. La URL /exec no cambia si actualizas la implementación existente
- *
- *  CORS: al desplegarse como Web App con acceso "Cualquier persona",
- *  las respuestas de ContentService se sirven con los headers CORS
- *  necesarios para consumirse desde GitHub Pages o cualquier origen.
- *  El cliente envía el body como text/plain para evitar el preflight
- *  OPTIONS (que Apps Script no soporta).
+ *     · La URL /exec NO cambia si editas la implementación existente
+ *     · Si creas una implementación nueva, la URL cambia: usa la nueva
+ *  4. En el sistema: Config → Probar conexión debe decir "script v3"
  * ═══════════════════════════════════════════════════════════════
  */
 
 // Si se deja vacío usa el Sheet contenedor del script (recomendado)
 const SPREADSHEET_ID = '';
+const VERSION = 3;
 
-// Headers oficiales de cada hoja (JSON guarda el registro completo para sincronización exacta)
+// Headers oficiales de cada hoja
 const HEADERS = {
   'Ventas':    ['ID','Fecha','Día','Semana','Canal','Forma de Pago','Turno','Artículos (texto)','Total','Notas','Timestamp','JSON'],
   'Egresos':   ['ID','Fecha','Día','Semana','Categoría','Concepto','Monto','Forma de Pago','Factura','Notas','Timestamp','JSON'],
   'Platillos': ['ID','Nombre','Categoría','Precio','Activo'],
-  'Config':    ['Clave','Valor']
+  'Config':    ['Clave','Valor'],
+  'Mesas':     ['Mesa','Estado','Desde','TS']
 };
 
-// Responde a pings de prueba de conexión
+// Responde a pings de prueba de conexión (incluye versión para diagnosticar)
 function doGet(e) {
-  return respuesta({ status: 'ok', timestamp: new Date().toISOString() });
+  return respuesta({ status: 'ok', version: VERSION, timestamp: new Date().toISOString() });
 }
 
 // Router principal: despacha según action
@@ -2500,14 +2606,17 @@ function doPost(e) {
     const data = body.data;
     let out;
     switch (body.action) {
-      case 'addVenta':      out = addVenta(data);      break;
-      case 'addEgreso':     out = addEgreso(data);     break;
-      case 'syncBatch':     out = syncBatch(data);     break;
-      case 'getAll':        out = getAll();            break;
-      case 'getPlatillos':  out = getPlatillos();      break;
-      case 'savePlatillos': out = savePlatillos(data); break;
-      case 'getConfig':     out = getConfig();         break;
-      case 'saveConfig':    out = saveConfig(data);    break;
+      case 'addVenta':       out = addVenta(data);       break;
+      case 'addEgreso':      out = addEgreso(data);      break;
+      case 'syncBatch':      out = syncBatch(data);      break;
+      case 'getAll':         out = getAll();             break;
+      case 'deleteRegistro': out = deleteRegistro(data); break;
+      case 'getMesas':       out = getMesasSrv();        break;
+      case 'saveMesas':      out = saveMesas(data);      break;
+      case 'getPlatillos':   out = getPlatillos();       break;
+      case 'savePlatillos':  out = savePlatillos(data);  break;
+      case 'getConfig':      out = getConfig();          break;
+      case 'saveConfig':     out = saveConfig(data);     break;
       default: out = { status: 'error', message: 'Acción desconocida: ' + body.action };
     }
     return respuesta(out);
@@ -2516,14 +2625,14 @@ function doPost(e) {
   }
 }
 
-// Devuelve JSON con ContentService (incluye headers CORS al servirse públicamente)
+// Devuelve JSON con ContentService (con headers CORS al servirse públicamente)
 function respuesta(obj) {
   return ContentService
     .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Obtiene (o crea con headers) la hoja indicada; agrega la columna JSON a hojas antiguas
+// Obtiene (o crea con headers) la hoja indicada; migra hojas v1 sin columna JSON
 function hoja(nombre) {
   const ss = SPREADSHEET_ID
     ? SpreadsheetApp.openById(SPREADSHEET_ID)
@@ -2535,7 +2644,6 @@ function hoja(nombre) {
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, HEADERS[nombre].length).setFontWeight('bold').setBackground('#E8EAF6');
   } else if (HEADERS[nombre].indexOf('JSON') >= 0) {
-    // Migración: hojas creadas con la v1 no tienen la columna JSON
     const h = sh.getRange(1, 1, 1, HEADERS[nombre].length).getValues()[0];
     if (h.indexOf('JSON') < 0) sh.getRange(1, HEADERS[nombre].length).setValue('JSON');
   }
@@ -2550,7 +2658,7 @@ function existeId(sh, id) {
   return ids.some(function(f) { return f[0] === id; });
 }
 
-// Convierte una venta a fila de hoja (la última celda guarda el objeto completo)
+// Convierte una venta a fila (la última celda guarda el objeto completo en JSON)
 function filaVenta(v) {
   const items = (v.items || []).map(function(i) {
     return i.cantidad + 'x ' + i.nombre + ' @' + i.precioUnit;
@@ -2558,12 +2666,12 @@ function filaVenta(v) {
   return [v.id, v.fecha, v.dia, v.semana, v.canal, v.pago, v.turno, items, v.total, v.notas || '', new Date(v.ts || Date.now()), JSON.stringify(v)];
 }
 
-// Convierte un egreso a fila de hoja
+// Convierte un egreso a fila
 function filaEgreso(g) {
   return [g.id, g.fecha, g.dia, g.semana, g.categoria, g.concepto, g.monto, g.pago, g.factura ? 'Sí' : 'No', g.notas || '', new Date(g.ts || Date.now()), JSON.stringify(g)];
 }
 
-// Agrega una venta a la hoja 'Ventas' (crea la hoja si no existe)
+// Agrega una venta a la hoja 'Ventas'
 function addVenta(data) {
   const sh = hoja('Ventas');
   if (!existeId(sh, data.id)) sh.appendRow(filaVenta(data));
@@ -2591,17 +2699,36 @@ function syncBatch(data) {
   return { status: 'ok', subidas: subidas };
 }
 
-// ★ Descarga TODOS los registros para que cada dispositivo vea lo mismo
+// Elimina un registro por ID (propaga el borrado hecho en cualquier dispositivo)
+function deleteRegistro(data) {
+  const nombre = data.tipo === 'venta' ? 'Ventas' : 'Egresos';
+  const sh = hoja(nombre);
+  const ultima = sh.getLastRow();
+  if (ultima >= 2) {
+    const ids = sh.getRange(2, 1, ultima - 1, 1).getValues();
+    for (var i = ids.length - 1; i >= 0; i--) {
+      if (ids[i][0] === data.id) sh.deleteRow(i + 2);
+    }
+  }
+  return { status: 'ok' };
+}
+
+// ★ Estado completo: todo lo que un dispositivo necesita para estar al día
 function getAll() {
   return {
     status: 'ok',
+    version: VERSION,
     ventas: leerRegistros('Ventas'),
     egresos: leerRegistros('Egresos'),
+    platillos: getPlatillos().platillos,
+    platillosTs: Number(PropertiesService.getScriptProperties().getProperty('platillosTs')) || 0,
+    config: getConfig().config,
+    mesas: mesasArray(),
     timestamp: new Date().toISOString()
   };
 }
 
-// Lee una hoja y reconstruye los objetos (usa la columna JSON; si falta, reconstruye de las columnas v1)
+// Lee una hoja y reconstruye los objetos (columna JSON; si falta, reconstruye v1)
 function leerRegistros(nombre) {
   const sh = hoja(nombre);
   const ultima = sh.getLastRow();
@@ -2618,7 +2745,7 @@ function leerRegistros(nombre) {
   }).filter(function(r) { return r && r.id; });
 }
 
-// Reconstruye una venta desde columnas v1 (sin JSON), parseando "2x Pozole @95 | …"
+// Reconstruye una venta desde columnas v1, parseando "2x Pozole @95 | …"
 function ventaDesdeFila(f) {
   const items = String(f[7] || '').split(' | ').map(function(s) {
     const m = s.match(/^(\d+)x (.+) @([\d.]+)$/);
@@ -2640,7 +2767,7 @@ function egresoDesdeFila(f) {
   };
 }
 
-// Normaliza fechas de celda (Date u texto) a 'YYYY-MM-DD'
+// Normaliza fechas de celda (Date o texto) a 'YYYY-MM-DD'
 function fechaISO(v) {
   if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
   return String(v).slice(0, 10);
@@ -2650,7 +2777,47 @@ function tsDe(v) {
   return v instanceof Date ? v.getTime() : (Number(v) || Date.now());
 }
 
-// Lee la hoja 'Platillos' y devuelve el catálogo como array de objetos
+/* ─────────── MESAS EN TIEMPO REAL ─────────── */
+
+// Lee la hoja Mesas como array [{n, estado, desde, ts}]
+function mesasArray() {
+  const sh = hoja('Mesas');
+  const ultima = sh.getLastRow();
+  if (ultima < 2) return [];
+  return sh.getRange(2, 1, ultima - 1, 4).getValues().map(function(f) {
+    return { n: Number(f[0]), estado: f[1] || 'libre', desde: Number(f[2]) || null, ts: Number(f[3]) || 0 };
+  }).filter(function(m) { return m.n; });
+}
+
+// Devuelve el estado actual del salón
+function getMesasSrv() {
+  return { status: 'ok', mesas: mesasArray() };
+}
+
+// Fusiona el estado recibido: por cada mesa gana el cambio más reciente (TS mayor)
+function saveMesas(data) {
+  const sh = hoja('Mesas');
+  const actuales = {};
+  mesasArray().forEach(function(m, i) { actuales[m.n] = { ts: m.ts, fila: i + 2 }; });
+  let siguiente = sh.getLastRow() + 1;
+  (data || []).forEach(function(m) {
+    const n = Number(m.n);
+    if (!n) return;
+    const cur = actuales[n];
+    if (!cur) {
+      sh.getRange(siguiente, 1, 1, 4).setValues([[n, m.estado || 'libre', Number(m.desde) || '', Number(m.ts) || 0]]);
+      actuales[n] = { ts: Number(m.ts) || 0, fila: siguiente };
+      siguiente++;
+    } else if (Number(m.ts || 0) > cur.ts) {
+      sh.getRange(cur.fila, 1, 1, 4).setValues([[n, m.estado || 'libre', Number(m.desde) || '', Number(m.ts) || 0]]);
+    }
+  });
+  return { status: 'ok', mesas: mesasArray() };
+}
+
+/* ─────────── CATÁLOGO Y CONFIGURACIÓN COMPARTIDOS ─────────── */
+
+// Lee la hoja 'Platillos' y devuelve el catálogo
 function getPlatillos() {
   const sh = hoja('Platillos');
   const ultima = sh.getLastRow();
@@ -2662,38 +2829,43 @@ function getPlatillos() {
   return { status: 'ok', platillos: platillos };
 }
 
-// Sobrescribe la hoja 'Platillos' con el catálogo completo recibido
+// Sobrescribe 'Platillos' con el catálogo completo; guarda su marca de tiempo
 function savePlatillos(data) {
+  const lista = Array.isArray(data) ? data : ((data && data.platillos) || []);
+  const ts = (data && data.ts) ? Number(data.ts) : Date.now();
   const sh = hoja('Platillos');
   sh.clearContents();
   sh.appendRow(HEADERS['Platillos']);
-  const filas = (data || []).map(function(p) {
+  const filas = lista.map(function(p) {
     return [p.id, p.nombre, p.categoria, p.precio, p.activo ? 'Sí' : 'No'];
   });
   if (filas.length) sh.getRange(2, 1, filas.length, 5).setValues(filas);
+  PropertiesService.getScriptProperties().setProperty('platillosTs', String(ts));
   return { status: 'ok', guardados: filas.length };
 }
 
-// Lee la hoja 'Config' como objeto clave/valor
+// Lee la configuración compartida (metas, días, usuarios) desde 'Config'
 function getConfig() {
   const sh = hoja('Config');
   const ultima = sh.getLastRow();
-  const config = {};
+  let config = {};
   if (ultima >= 2) {
-    sh.getRange(2, 1, ultima - 1, 2).getValues().forEach(function(f) {
-      if (f[0]) config[f[0]] = f[1];
-    });
+    const filas = sh.getRange(2, 1, ultima - 1, 2).getValues();
+    for (var i = 0; i < filas.length; i++) {
+      if (filas[i][0] === 'config') {
+        try { config = JSON.parse(filas[i][1]); } catch (e) { /* ignora */ }
+      }
+    }
   }
   return { status: 'ok', config: config };
 }
 
-// Escribe la hoja 'Config' con el objeto clave/valor recibido
+// Guarda la configuración compartida como un solo JSON
 function saveConfig(data) {
   const sh = hoja('Config');
   sh.clearContents();
   sh.appendRow(HEADERS['Config']);
-  const filas = Object.keys(data || {}).map(function(k) { return [k, JSON.stringify(data[k])]; });
-  if (filas.length) sh.getRange(2, 1, filas.length, 2).setValues(filas);
+  sh.getRange(2, 1, 1, 2).setValues([['config', JSON.stringify(data || {})]]);
   return { status: 'ok' };
 }
 ```
