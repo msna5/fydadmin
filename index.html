@@ -12,6 +12,9 @@
 <!-- Librerías CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Firebase (sincronización en la nube en TIEMPO REAL) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 /* ============================================================
    SECCIÓN 1 · DESIGN SYSTEM — La Casa de Frida y Diego
@@ -1002,13 +1005,105 @@ const fmtMXN = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN'
    Pega aquí tu URL /exec para que TODOS los dispositivos se conecten
    automáticamente sin tener que configurar nada en cada uno.
    Ejemplo: const SCRIPT_URL_FIJA = 'https://script.google.com/macros/s/AKfycb…/exec'; */
-const SCRIPT_URL_FIJA = 'https://script.google.com/macros/s/AKfycbz5IJE6eY9obukkxPhzBJ8sOH9VMj9i6V2caCYr9ZhIU-hSDmXDJN914VwoLAGcYaON/exec';
+const SCRIPT_URL_FIJA = '';
 
 // URL efectiva de sincronización: la configurada en el dispositivo o, si no hay, la fija
 function getScriptUrl(){
   const cfg = DB.get(LS.config, {});
   const propia = (cfg.scriptUrl || '').trim();
   return propia || (SCRIPT_URL_FIJA.indexOf('https') === 0 ? SCRIPT_URL_FIJA : '');
+}
+
+/* ★★★ CONFIGURACIÓN DE FIREBASE — SINCRONIZACIÓN EN TIEMPO REAL ★★★
+   Este es el modo RECOMENDADO: todos los dispositivos comparten la misma
+   información al instante (ventas, egresos, catálogo, usuarios y mesas).
+   1. Entra a https://console.firebase.google.com → "Agregar proyecto"
+   2. Compilación → Firestore Database → Crear base de datos → modo de prueba
+   3. ⚙ Configuración del proyecto → Tus apps → icono Web </> → registra la app
+   4. Copia el objeto firebaseConfig y pégalo aquí ABAJO (reemplaza null):
+
+   const FIREBASE_CONFIG = {
+     apiKey: "AIza…",
+     authDomain: "tuproyecto.firebaseapp.com",
+     projectId: "tuproyecto",
+     storageBucket: "tuproyecto.appspot.com",
+     messagingSenderId: "123456789",
+     appId: "1:123456789:web:abc123"
+   };
+*/
+
+   const firebaseConfig = {
+  apiKey: "AIzaSyBvB1rEU-k6BXOsxS-2apfzEqhWxCXo9Kk",
+  authDomain: "fridaydiego-79dab.firebaseapp.com",
+  projectId: "fridaydiego-79dab",
+  storageBucket: "fridaydiego-79dab.firebasestorage.app",
+  messagingSenderId: "825336824902",
+  appId: "1:825336824902:web:4d497c5044f5b4521af647"
+};
+
+let fdb = null, fbListo = false;
+const _migraciones = new Set();
+// Arranca Firebase si hay configuración pegada arriba; devuelve true si quedó activo
+function iniciarFirebase(){
+  if (!FIREBASE_CONFIG || typeof firebase === 'undefined') return false;
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fdb = firebase.firestore();
+    try { fdb.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch(e){ /* pestañas múltiples */ }
+    fbListo = true;
+    return true;
+  } catch(err){ console.warn('Firebase no disponible:', err); return false; }
+}
+// Suscripciones en vivo: cada cambio en la nube llega al instante a este dispositivo
+function escucharNube(){
+  fdb.collection('ventas').onSnapshot(s => snapshotRegistros(LS.ventas, 'ventas', s), () => {});
+  fdb.collection('egresos').onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), () => {});
+  fdb.collection('mesas').onSnapshot(s => {
+    const lista = []; s.forEach(d => { const m = d.data(); if (m && m.n) lista.push(m); });
+    if (lista.length) fusionarMesas(lista);
+  }, () => {});
+  fdb.collection('estado').doc('config').onSnapshot(d => {
+    const rc = d.data();
+    if (rc && Number(rc.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
+      const cfgL = getConfig();
+      ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => {
+        if (rc[k] !== undefined) cfgL[k] = rc[k];
+      });
+      DB.set(LS.config, cfgL);
+      if (vistaActual === 'config') renderConfig();
+    }
+  }, () => {});
+  fdb.collection('estado').doc('platillos').onSnapshot(d => {
+    const rp = d.data();
+    if (rp && Array.isArray(rp.lista) && rp.lista.length && Number(rp.ts || 0) > (Number(DB.get('frida_platillos_ts', 0)) || 0)){
+      DB.set(LS.platillos, rp.lista);
+      DB.set('frida_platillos_ts', Number(rp.ts));
+      if (vistaActual === 'config') renderConfig();
+    }
+  }, () => {});
+}
+// Espejo local de una colección; la primera vez sube los datos previos que falten en la nube
+function snapshotRegistros(llave, col, snap){
+  const nube = [];
+  snap.forEach(d => {
+    const r = d.data();
+    if (r && r.id){ r.sincronizado = !(d.metadata && d.metadata.hasPendingWrites); nube.push(r); }
+  });
+  if (!DB.get('frida_fb_migrado', false)){
+    const ids = new Set(nube.map(r => r.id));
+    const faltantes = DB.get(llave, []).filter(r => r && r.id && !ids.has(r.id));
+    faltantes.forEach(r => {
+      const copia = Object.assign({}, r, { sincronizado: true });
+      fdb.collection(col).doc(r.id).set(copia).catch(() => {});
+      nube.push(copia);
+    });
+    _migraciones.add(col);
+    if (_migraciones.size >= 2) DB.set('frida_fb_migrado', true);
+  }
+  nube.sort((a,b) => (a.ts || 0) - (b.ts || 0));
+  DB.set(llave, nube);
+  refrescarVistaActual();
+  actualizarBadgeSync();
 }
 
 // Configuración por defecto (usuarios iniciales incluidos; editables en Config)
@@ -1141,6 +1236,11 @@ function marcarSincronizado(tipo, id){
 }
 // Intenta subir un registro individual en segundo plano (no bloquea la UI)
 function sincronizarRegistro(tipo, obj){
+  if (fbListo){
+    // Firestore guarda y propaga al instante (y encola solo si no hay internet)
+    fdb.collection(tipo === 'venta' ? 'ventas' : 'egresos').doc(obj.id).set(obj).catch(() => {});
+    return;
+  }
   if (!getScriptUrl()){ marcarPendiente(tipo, obj.id); return; }
   postScript({ action: tipo === 'venta' ? 'addVenta' : 'addEgreso', data: obj })
     .then(res => {
@@ -1151,6 +1251,13 @@ function sincronizarRegistro(tipo, obj){
 }
 // Sube en lote todo lo pendiente
 async function sincronizarTodo(){
+  if (fbListo){
+    let n = 0;
+    getVentas().filter(v => !v.sincronizado).forEach(v => { fdb.collection('ventas').doc(v.id).set(v).catch(() => {}); n++; });
+    getEgresos().filter(g => !g.sincronizado).forEach(g => { fdb.collection('egresos').doc(g.id).set(g).catch(() => {}); n++; });
+    toast(n ? '↑ Reenviando ' + n + ' registro' + (n === 1 ? '' : 's') + ' a la nube…' : '✓ Todo al día · tiempo real activo', 'exito');
+    return;
+  }
   if (!getScriptUrl()){ toast('Configura primero la URL de Google Sheets', 'alerta'); return; }
   const pend = getPendientes();
   if (!pend.length){
@@ -1185,6 +1292,16 @@ function registrarSyncExitosa(){
 // Actualiza el badge de estado en la navbar y el banner amarillo
 function actualizarBadgeSync(){
   const badge = document.getElementById('badge-sync');
+  if (fbListo){
+    const p = getVentas().filter(v => !v.sincronizado).length + getEgresos().filter(g => !g.sincronizado).length;
+    if (!navigator.onLine){ badge.className = 'pendiente'; badge.textContent = '● sin internet · se subirá solo'; }
+    else if (p > 0){ badge.className = 'pendiente'; badge.textContent = '● subiendo ' + p + '…'; }
+    else { badge.className = ''; badge.textContent = '● en vivo'; }
+    document.getElementById('banner-sheets').style.display = 'none';
+    const cpF = document.getElementById('cfg-pendientes');
+    if (cpF) cpF.textContent = 'Tiempo real activo (Firebase): los registros se comparten al instante';
+    return;
+  }
   const n = getPendientes().length;
   const url = getScriptUrl();
   if (!url){
@@ -1805,14 +1922,19 @@ async function eliminarRegistro(id){
   const llave = tipo === 'venta' ? LS.ventas : LS.egresos;
   DB.set(llave, DB.get(llave, []).filter(r => r.id !== id));
   DB.set(LS.pendientes, getPendientes().filter(p => p.id !== id));
-  // Lápida: evita que el pull lo reviva, y propaga el borrado a Sheets
-  const borrados = DB.get('frida_borrados', []);
-  borrados.push({ tipo: tipo, id: id });
-  DB.set('frida_borrados', borrados.slice(-500));
-  if (getScriptUrl()){
-    postScript({ action:'deleteRegistro', data: { tipo: tipo, id: id } })
-      .then(res => { if (res && res.status === 'ok') DB.set('frida_borrados', DB.get('frida_borrados', []).filter(b => b.id !== id)); })
-      .catch(() => {});
+  if (fbListo){
+    // El borrado llega al instante a todos los dispositivos
+    fdb.collection(tipo === 'venta' ? 'ventas' : 'egresos').doc(id).delete().catch(() => {});
+  } else {
+    // Lápida: evita que el pull lo reviva, y propaga el borrado a Sheets
+    const borrados = DB.get('frida_borrados', []);
+    borrados.push({ tipo: tipo, id: id });
+    DB.set('frida_borrados', borrados.slice(-500));
+    if (getScriptUrl()){
+      postScript({ action:'deleteRegistro', data: { tipo: tipo, id: id } })
+        .then(res => { if (res && res.status === 'ok') DB.set('frida_borrados', DB.get('frida_borrados', []).filter(b => b.id !== id)); })
+        .catch(() => {});
+    }
   }
   actualizarBadgeSync();
   toast('Registro eliminado');
@@ -1963,6 +2085,7 @@ document.getElementById('btn-guardar-url').addEventListener('click', () => {
 // Prueba de conexión: hace GET (ping) al Web App y muestra el resultado
 document.getElementById('btn-probar').addEventListener('click', async () => {
   const msg = document.getElementById('cfg-msg-conexion');
+  if (fbListo){ msg.className = 'msg-ok'; msg.textContent = '✓ Tiempo real activo (Firebase) — Google Sheets ya no es necesario'; return; }
   const url = document.getElementById('cfg-url').value.trim();
   if (!url){ msg.className = 'msg-error'; msg.textContent = 'Primero pega la URL'; return; }
   msg.className = ''; msg.textContent = 'Probando…';
@@ -2027,7 +2150,11 @@ document.getElementById('btn-guardar-catalogo').addEventListener('click', () => 
   setTimeout(() => msg.textContent = '', 3000);
   const tsCat = Date.now();
   DB.set('frida_platillos_ts', tsCat);
-  if (getScriptUrl()){
+  if (fbListo){
+    fdb.collection('estado').doc('platillos').set({ lista: limpio, ts: tsCat })
+      .then(() => toast('✓ Catálogo compartido con todos los dispositivos', 'exito'))
+      .catch(() => toast('Catálogo guardado localmente; se compartirá al volver internet', 'alerta'));
+  } else if (getScriptUrl()){
     postScript({ action:'savePlatillos', data: { platillos: limpio, ts: tsCat } })
       .then(() => toast('✓ Catálogo respaldado en Sheets', 'exito'))
       .catch(() => toast('El catálogo se guardó localmente; no se pudo subir a Sheets', 'alerta'));
@@ -2332,6 +2459,7 @@ function refrescarVistaActual(){
 // Descarga TODO de Sheets (registros, catálogo, config, mesas) y lo integra
 let _avisoScriptViejo = false;
 async function descargarDeSheets(avisar){
+  if (fbListo) return;   // en tiempo real no hace falta sondear
   if (!getScriptUrl() || _pullEnCurso) return;
   _pullEnCurso = true;
   try {
@@ -2436,19 +2564,20 @@ function accionMesa(n, a){
   }
   setMesas(mesas);
   renderMesas();
-  empujarMesas();          // comparte el cambio con los demás dispositivos
+  empujarMesa(m);          // comparte el cambio con los demás dispositivos al instante
 }
 // Reloj del salón: actualiza tiempos y concluye la limpieza automáticamente
 function tickMesas(){
   if (vistaActual !== 'mesas') return;
   const mesas = getMesas();
   let cambio = false;
+  const cambiadas = [];
   mesas.forEach(m => {
     if (m.estado === 'liberando' && Date.now() - m.desde > LIBERANDO_SEG * 1000){
-      m.estado = 'libre'; m.desde = null; m.ts = Date.now(); cambio = true;
+      m.estado = 'libre'; m.desde = null; m.ts = Date.now(); cambio = true; cambiadas.push(m);
     }
   });
-  if (cambio){ setMesas(mesas); renderMesas(); empujarMesas(); return; }
+  if (cambio){ setMesas(mesas); renderMesas(); cambiadas.forEach(empujarMesa); return; }
   mesas.forEach(m => {
     const el = document.querySelector('[data-t="' + m.n + '"]');
     if (el) el.textContent = m.estado === 'liberando' ? 'limpiando ' + transcurrido(m.desde) : transcurrido(m.desde);
@@ -2479,6 +2608,11 @@ function fusionarMesas(remotas){
   });
   if (cambio){ setMesas(mesas); if (vistaActual === 'mesas') renderMesas(); }
 }
+// Sube el cambio de UNA mesa; en Firebase es un documento por mesa (tiempo real)
+function empujarMesa(m){
+  if (fbListo){ fdb.collection('mesas').doc(String(m.n)).set(m).catch(() => {}); return; }
+  empujarMesas();
+}
 // Sube el salón completo; el servidor fusiona por mesa y responde el estado vigente
 function empujarMesas(){
   if (!getScriptUrl()) return;
@@ -2488,6 +2622,7 @@ function empujarMesas(){
 }
 // Consulta ligera del salón (se usa cada 10 s mientras se ve la vista de mesas)
 function pullMesas(){
+  if (fbListo) return;   // en Firebase las mesas llegan solas en tiempo real
   if (!getScriptUrl() || !navigator.onLine) return;
   postScript({ action:'getMesas' })
     .then(res => { if (res && res.status === 'ok' && Array.isArray(res.mesas)) fusionarMesas(res.mesas); })
@@ -2498,9 +2633,10 @@ function empujarConfig(){
   const cfg = getConfig();
   cfg.cfgTs = Date.now();
   DB.set(LS.config, cfg);
-  if (!getScriptUrl()) return;
   const compartida = {};
   ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => compartida[k] = cfg[k]);
+  if (fbListo){ fdb.collection('estado').doc('config').set(compartida).catch(() => {}); return; }
+  if (!getScriptUrl()) return;
   postScript({ action:'saveConfig', data: compartida }).catch(() => {});
 }
 
@@ -2525,16 +2661,23 @@ function iniciarApp(){
   burbuja('¡Hola' + (usuarioActual ? ', ' + usuarioActual.nombre : '') + '! Soy tu asistente de análisis. Pregúntame por tu margen, tu mejor día o usa los botones de arriba. 🌮', 'bot');
   // Reloj del salón de mesas (tiempos y fin de limpieza)
   setInterval(tickMesas, 1000);
-  // Sincronización bidireccional: al arrancar sube pendientes y baja lo nuevo…
-  if (getScriptUrl() && navigator.onLine){
-    setTimeout(() => { getPendientes().length ? sincronizarTodo() : descargarDeSheets(false); }, 1200);
+  // Nube en TIEMPO REAL (Firebase): si está configurada, todo llega al instante
+  if (iniciarFirebase()){
+    escucharNube();
+    actualizarBadgeSync();
+  } else {
+    // Respaldo: modo Google Sheets por sondeo
+    if (getScriptUrl() && navigator.onLine){
+      setTimeout(() => { getPendientes().length ? sincronizarTodo() : descargarDeSheets(false); }, 1200);
+    }
+    setInterval(() => {
+      if (getScriptUrl() && navigator.onLine) descargarDeSheets(false);
+    }, 45000);
+    setInterval(() => { if (vistaActual === 'mesas') pullMesas(); }, 10000);
   }
-  // …cada 45 segundos revisa si otros dispositivos registraron algo…
-  setInterval(() => {
-    if (getScriptUrl() && navigator.onLine) descargarDeSheets(false);
-  }, 45000);
-  // …y el salón de mesas se refresca cada 10 segundos mientras lo tengas en pantalla
-  setInterval(() => { if (vistaActual === 'mesas') pullMesas(); }, 10000);
+  // Al recuperar internet, reintenta subir lo pendiente
+  window.addEventListener('online', () => { actualizarBadgeSync(); if (!fbListo) sincronizarTodo(); });
+  window.addEventListener('offline', actualizarBadgeSync);
 }
 // Punto de entrada
 sembrarDatos();
