@@ -1055,76 +1055,22 @@ function iniciarFirebase(){
   } catch(err){ console.warn('Firebase no disponible:', err); return false; }
 }
 
-/* ★ CANDADO DE SINCRONIZACIÓN ★
-   La base de datos exige iniciar sesión (reglas: request.auth != null).
-   En Firebase console → Authentication crea UN usuario con este correo
-   y la clave que tú decidas; cada dispositivo la escribe una sola vez. */
-const FIREBASE_SYNC_EMAIL = 'sync@fridaydiego.app';
-
+/* ★ CUENTAS INDIVIDUALES ★
+   Cada empleado tiene su propia cuenta en Firebase Authentication y su rol
+   vive en la colección "roles" de Firestore; las REGLAS de la base de datos
+   son las que deciden qué puede hacer cada quien (no la interfaz).
+   En el login se escribe solo el usuario (p. ej. "admin"); el sistema le
+   agrega este dominio para formar el correo de la cuenta. */
+const DOMINIO_CORREO = '@fridaydiego.app';
 let _escuchando = false;
-// Conecta a la nube: si el dispositivo aún no está autorizado, pide la clave
-function conectarNube(){
-  if (!firebase.auth){ escucharNube(); return; }   // sin módulo auth: modo abierto
-  firebase.auth().onAuthStateChanged(u => {
-    if (u){
-      if (!_escuchando){ _escuchando = true; escucharNube(); }
-      actualizarBadgeSync();
-      // Reenvía en silencio lo que se haya guardado antes de autorizar
-      setTimeout(() => {
-        getVentas().filter(v => !v.sincronizado).forEach(v => fdb.collection('ventas').doc(v.id).set(v).catch(() => {}));
-        getEgresos().filter(g => !g.sincronizado).forEach(g => fdb.collection('egresos').doc(g.id).set(g).catch(() => {}));
-      }, 1500);
-    } else {
-      actualizarBadgeSync();
-      pedirClaveSync();
-    }
-  });
-}
-// Modal que pide la clave de sincronización (una sola vez por dispositivo)
-function pedirClaveSync(){
-  const fondo = document.getElementById('modal-fondo');
-  const input = document.getElementById('modal-input');
-  document.getElementById('modal-titulo').textContent = '🔒 Clave de sincronización';
-  document.getElementById('modal-texto').textContent = 'Escribe la clave de sincronización del restaurante para autorizar este dispositivo. Solo se pide una vez; sin ella, los datos se guardan únicamente en este equipo.';
-  input.style.display = 'block'; input.type = 'password'; input.value = '';
-  input.placeholder = 'Clave de sincronización'; input.style.borderColor = '';
-  fondo.classList.add('visible');
-  setTimeout(() => input.focus(), 80);
-  _modalResolve = ok => {
-    if (!ok){
-      fondo.classList.remove('visible'); _modalResolve = null; input.type = 'text';
-      actualizarBadgeSync();
-      toast('Dispositivo sin autorizar: toca el badge de arriba para intentar de nuevo', 'alerta');
-      return;
-    }
-    const clave = input.value;
-    if (!clave){ input.style.borderColor = 'var(--peligro)'; return; }
-    firebase.auth().signInWithEmailAndPassword(FIREBASE_SYNC_EMAIL, clave)
-      .then(() => {
-        fondo.classList.remove('visible'); _modalResolve = null; input.type = 'text';
-        toast('✓ Dispositivo autorizado · sincronización en vivo', 'exito');
-      })
-      .catch(() => { input.style.borderColor = 'var(--peligro)'; toast('Clave incorrecta', 'error'); });
-  };
-}
-// Suscripciones en vivo: cada cambio en la nube llega al instante a este dispositivo
+let _rolesCache = [];
+// Suscripciones en vivo según el rol: las reglas de Firestore además lo
+// refuerzan del lado del servidor (el mesero no puede leer finanzas ni queriendo)
 function escucharNube(){
-  fdb.collection('ventas').onSnapshot(s => snapshotRegistros(LS.ventas, 'ventas', s), () => {});
-  fdb.collection('egresos').onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), () => {});
+  const esAdminRol = usuarioActual && usuarioActual.rol === 'admin';
   fdb.collection('mesas').onSnapshot(s => {
     const lista = []; s.forEach(d => { const m = d.data(); if (m && m.n) lista.push(m); });
     if (lista.length) fusionarMesas(lista);
-  }, () => {});
-  fdb.collection('estado').doc('config').onSnapshot(d => {
-    const rc = d.data();
-    if (rc && Number(rc.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
-      const cfgL = getConfig();
-      ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => {
-        if (rc[k] !== undefined) cfgL[k] = rc[k];
-      });
-      DB.set(LS.config, cfgL);
-      if (vistaActual === 'config') renderConfig();
-    }
   }, () => {});
   fdb.collection('estado').doc('platillos').onSnapshot(d => {
     const rp = d.data();
@@ -1133,6 +1079,25 @@ function escucharNube(){
       DB.set('frida_platillos_ts', Number(rp.ts));
       if (vistaActual === 'config') renderConfig();
     }
+  }, () => {});
+  if (!esAdminRol) return;   // hasta aquí llega el mesero
+  fdb.collection('ventas').onSnapshot(s => snapshotRegistros(LS.ventas, 'ventas', s), () => {});
+  fdb.collection('egresos').onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), () => {});
+  fdb.collection('estado').doc('config').onSnapshot(d => {
+    const rc = d.data();
+    if (rc && Number(rc.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
+      const cfgL = getConfig();
+      ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','cfgTs'].forEach(k => {
+        if (rc[k] !== undefined) cfgL[k] = rc[k];
+      });
+      DB.set(LS.config, cfgL);
+      if (vistaActual === 'config') renderConfig();
+    }
+  }, () => {});
+  fdb.collection('roles').onSnapshot(s => {
+    _rolesCache = [];
+    s.forEach(d => _rolesCache.push(Object.assign({ uid: d.id }, d.data())));
+    if (vistaActual === 'config') renderUsuarios();
   }, () => {});
 }
 // Espejo local de una colección; la primera vez sube los datos previos que falten en la nube
@@ -1305,7 +1270,6 @@ function sincronizarRegistro(tipo, obj){
 // Sube en lote todo lo pendiente
 async function sincronizarTodo(){
   if (fbListo){
-    if (firebase.auth && !firebase.auth().currentUser){ pedirClaveSync(); return; }
     let n = 0;
     getVentas().filter(v => !v.sincronizado).forEach(v => { fdb.collection('ventas').doc(v.id).set(v).catch(() => {}); n++; });
     getEgresos().filter(g => !g.sincronizado).forEach(g => { fdb.collection('egresos').doc(g.id).set(g).catch(() => {}); n++; });
@@ -1347,13 +1311,6 @@ function registrarSyncExitosa(){
 function actualizarBadgeSync(){
   const badge = document.getElementById('badge-sync');
   if (fbListo){
-    if (firebase.auth && !firebase.auth().currentUser){
-      badge.className = 'pendiente'; badge.textContent = '🔒 requiere clave';
-      document.getElementById('banner-sheets').style.display = 'none';
-      const cpA = document.getElementById('cfg-pendientes');
-      if (cpA) cpA.textContent = 'Firebase configurado; falta autorizar este dispositivo con la clave de sincronización';
-      return;
-    }
     const p = getVentas().filter(v => !v.sincronizado).length + getEgresos().filter(g => !g.sincronizado).length;
     if (!navigator.onLine){ badge.className = 'pendiente'; badge.textContent = '● sin internet · se subirá solo'; }
     else if (p > 0){ badge.className = 'pendiente'; badge.textContent = '● subiendo ' + p + '…'; }
@@ -1387,21 +1344,53 @@ function intentarLogin(user, pass){
   const u = getConfig().usuarios[user.trim().toLowerCase()];
   return (u && u.pass === pass) ? Object.assign({ user: user.trim().toLowerCase() }, u) : null;
 }
-document.getElementById('form-login').addEventListener('submit', e => {
-  e.preventDefault();
-  const u = intentarLogin(document.getElementById('login-usuario').value, document.getElementById('login-pass').value);
-  const err = document.getElementById('login-error');
-  if (!u){ err.textContent = 'Usuario o contraseña incorrectos'; return; }
-  err.textContent = '';
-  usuarioActual = u;
-  sessionStorage.setItem('frida_session', JSON.stringify(u));
+// Cierra la pantalla de login con animación y arranca la app
+function salirDeLogin(){
   const pantalla = document.getElementById('pantalla-login');
   pantalla.classList.add('saliendo');                  // animación de salida
   setTimeout(() => { pantalla.style.display = 'none'; iniciarApp(); }, 480);
+}
+document.getElementById('form-login').addEventListener('submit', async e => {
+  e.preventDefault();
+  const err = document.getElementById('login-error');
+  const usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
+  const pass = document.getElementById('login-pass').value;
+  if (fbListo && firebase.auth){
+    err.textContent = 'Verificando…';
+    try {
+      // La cuenta es individual: usuario corto + dominio interno
+      const email = usuario.indexOf('@') >= 0 ? usuario : usuario + DOMINIO_CORREO;
+      const cred = await firebase.auth().signInWithEmailAndPassword(email, pass);
+      const rolSnap = await fdb.collection('roles').doc(cred.user.uid).get();
+      if (!rolSnap.exists){
+        err.textContent = 'Tu cuenta no tiene permisos asignados. Pide al administrador que te active.';
+        firebase.auth().signOut();
+        return;
+      }
+      const d = rolSnap.data();
+      usuarioActual = { user: d.usuario || usuario, nombre: d.nombre || usuario, rol: d.rol || 'mesero', uid: cred.user.uid };
+      err.textContent = '';
+      salirDeLogin();
+    } catch(ex){
+      err.textContent = /network|internet/i.test(String(ex)) ? 'Sin internet: no se pudo verificar la cuenta' : 'Usuario o contraseña incorrectos';
+    }
+    return;
+  }
+  // Modo local (solo si Firebase no está configurado)
+  const u = intentarLogin(usuario, pass);
+  if (!u){ err.textContent = 'Usuario o contraseña incorrectos'; return; }
+  usuarioActual = u;
+  sessionStorage.setItem('frida_session', JSON.stringify(u));
+  err.textContent = '';
+  salirDeLogin();
 });
 // Cierra sesión y regresa al login
 function cerrarSesion(){
   sessionStorage.removeItem('frida_session');
+  if (fbListo && firebase.auth){
+    firebase.auth().signOut().then(() => location.reload(), () => location.reload());
+    return;
+  }
   location.reload();
 }
 document.getElementById('btn-salir').addEventListener('click', cerrarSesion);
@@ -2242,16 +2231,57 @@ document.getElementById('btn-guardar-params').addEventListener('click', () => {
 });
 
 /* ---------- Bloque 4: Usuarios ---------- */
-// Lista de usuarios con acciones (cambiar contraseña / eliminar)
+// Lista de usuarios: con Firebase muestra las cuentas activas (colección roles)
 function renderUsuarios(){
+  const cuerpo = document.getElementById('tabla-usuarios');
+  if (fbListo){
+    const lista = _rolesCache.length ? _rolesCache
+      : (usuarioActual ? [{ uid: usuarioActual.uid, usuario: usuarioActual.user, nombre: usuarioActual.nombre, rol: usuarioActual.rol }] : []);
+    cuerpo.innerHTML = lista.map(r =>
+      '<tr><td class="mono">' + esc(r.usuario) + '</td><td>' + esc(r.nombre) + '</td><td><span class="chip">' + esc(r.rol) + '</span></td>' +
+      '<td>' + (usuarioActual && r.uid === usuarioActual.uid
+        ? '<button class="btn btn-outline btn-sm" data-mipass="1">Cambiar mi contraseña</button>'
+        : '<button class="btn-x" data-baja="' + esc(r.uid) + '" title="Desactivar cuenta">🚫</button>') + '</td></tr>'
+    ).join('') || '<tr><td colspan="4" class="vacio-msg">Cargando cuentas…</td></tr>';
+    return;
+  }
   const usuarios = getConfig().usuarios;
-  document.getElementById('tabla-usuarios').innerHTML = Object.entries(usuarios).map(([u, d]) =>
+  cuerpo.innerHTML = Object.entries(usuarios).map(([u, d]) =>
     '<tr><td class="mono">' + esc(u) + '</td><td>' + esc(d.nombre) + '</td><td><span class="chip">' + esc(d.rol) + '</span></td>' +
     '<td><button class="btn btn-outline btn-sm" data-pass="' + esc(u) + '">Cambiar contraseña</button> ' +
     '<button class="btn-x" data-user-del="' + esc(u) + '" title="Eliminar">🗑</button></td></tr>'
   ).join('');
 }
+// Cambia la contraseña de la cuenta propia (pide la actual por seguridad)
+async function cambiarMiPass(){
+  const actual = prompt('Tu contraseña actual:'); if (!actual) return;
+  const nueva = prompt('Nueva contraseña (mínimo 6 caracteres):');
+  if (!nueva || nueva.length < 6){ toast('La contraseña debe tener al menos 6 caracteres', 'alerta'); return; }
+  try {
+    const u = firebase.auth().currentUser;
+    const credencial = firebase.auth.EmailAuthProvider.credential(u.email, actual);
+    await u.reauthenticateWithCredential(credencial);
+    await u.updatePassword(nueva);
+    toast('✓ Contraseña actualizada', 'exito');
+  } catch(ex){ toast('No se pudo cambiar: verifica tu contraseña actual', 'error'); }
+}
 document.getElementById('tabla-usuarios').addEventListener('click', async e => {
+  if (fbListo){
+    if (e.target.closest('[data-mipass]')){ cambiarMiPass(); return; }
+    const bb = e.target.closest('[data-baja]');
+    if (bb){
+      const uid = bb.dataset.baja;
+      const obj = _rolesCache.find(r => r.uid === uid);
+      const admins = _rolesCache.filter(r => r.rol === 'admin').length;
+      if (obj && obj.rol === 'admin' && admins <= 1){ toast('No puedes desactivar al último administrador', 'error'); return; }
+      const ok = await confirmar('¿Desactivar cuenta?', 'La persona ya no podrá entrar ni ver ningún dato, aunque conozca su contraseña. Podrás reactivarla creándola de nuevo.');
+      if (!ok) return;
+      fdb.collection('roles').doc(uid).delete()
+        .then(() => toast('Cuenta desactivada', 'exito'))
+        .catch(() => toast('No se pudo desactivar la cuenta', 'error'));
+    }
+    return;
+  }
   const bp = e.target.closest('[data-pass]');
   if (bp){
     const u = bp.dataset.pass;
@@ -2276,12 +2306,32 @@ document.getElementById('tabla-usuarios').addEventListener('click', async e => {
     renderUsuarios(); toast('Usuario eliminado');
   }
 });
-document.getElementById('btn-add-usuario').addEventListener('click', () => {
+document.getElementById('btn-add-usuario').addEventListener('click', async () => {
   const user = document.getElementById('u-user').value.trim().toLowerCase();
   const nombre = document.getElementById('u-nombre').value.trim();
   const pass = document.getElementById('u-pass').value;
   const rol = document.getElementById('u-rol').value;
   const msg = document.getElementById('u-msg');
+  if (fbListo){
+    if (!user || !nombre || pass.length < 6){ msg.textContent = 'Completa usuario, nombre y contraseña (mínimo 6 caracteres)'; return; }
+    msg.textContent = 'Creando cuenta…';
+    try {
+      // App secundaria: crea la cuenta sin cerrar la sesión del administrador
+      const app2 = firebase.initializeApp(FIREBASE_CONFIG, 'alta-' + Date.now());
+      const cred = await app2.auth().createUserWithEmailAndPassword(user + DOMINIO_CORREO, pass);
+      await fdb.collection('roles').doc(cred.user.uid).set({
+        usuario: user, nombre: nombre, rol: rol, email: user + DOMINIO_CORREO, creado: Date.now()
+      });
+      await app2.auth().signOut();
+      if (app2.delete) app2.delete().catch(() => {});
+      msg.textContent = '';
+      ['u-user','u-nombre','u-pass'].forEach(id => document.getElementById(id).value = '');
+      toast('✓ Cuenta creada para ' + nombre + ' (' + user + ')', 'exito');
+    } catch(ex){
+      msg.textContent = /already|in-use/i.test(String(ex)) ? 'Ese usuario ya existe' : 'No se pudo crear la cuenta: ' + (ex && ex.message || ex);
+    }
+    return;
+  }
   if (!user || !nombre || pass.length < 4){ msg.textContent = 'Completa usuario, nombre y contraseña (mín. 4 caracteres)'; return; }
   const cfg = getConfig();
   if (cfg.usuarios[user]){ msg.textContent = 'Ese usuario ya existe'; return; }
@@ -2696,8 +2746,10 @@ function empujarConfig(){
   const cfg = getConfig();
   cfg.cfgTs = Date.now();
   DB.set(LS.config, cfg);
+  const claves = ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','cfgTs'];
+  if (!fbListo) claves.push('usuarios');   // solo el modo local antiguo comparte usuarios
   const compartida = {};
-  ['nombre','inicio','diasOperacion','metaMargen','metaTicket','metaVentasSem','usuarios','cfgTs'].forEach(k => compartida[k] = cfg[k]);
+  claves.forEach(k => compartida[k] = cfg[k]);
   if (fbListo){ fdb.collection('estado').doc('config').set(compartida).catch(() => {}); return; }
   if (!getScriptUrl()) return;
   postScript({ action:'saveConfig', data: compartida }).catch(() => {});
@@ -2724,9 +2776,9 @@ function iniciarApp(){
   burbuja('¡Hola' + (usuarioActual ? ', ' + usuarioActual.nombre : '') + '! Soy tu asistente de análisis. Pregúntame por tu margen, tu mejor día o usa los botones de arriba. 🌮', 'bot');
   // Reloj del salón de mesas (tiempos y fin de limpieza)
   setInterval(tickMesas, 1000);
-  // Nube en TIEMPO REAL (Firebase): si está configurada, todo llega al instante
-  if (iniciarFirebase()){
-    conectarNube();
+  // Nube en TIEMPO REAL (Firebase): la sesión ya viene autenticada desde el login
+  if (fbListo){
+    if (!_escuchando){ _escuchando = true; escucharNube(); }
     actualizarBadgeSync();
   } else {
     // Respaldo: modo Google Sheets por sondeo
@@ -2744,12 +2796,34 @@ function iniciarApp(){
 }
 // Punto de entrada
 sembrarDatos();
+iniciarFirebase();
 (function(){
+  if (fbListo && firebase.auth){
+    // Sesión persistente: si el dispositivo ya inició sesión antes, entra directo
+    let arrancado = false;
+    firebase.auth().onAuthStateChanged(async u => {
+      if (arrancado || usuarioActual) return;
+      if (!u) return;   // sin sesión: se queda en la pantalla de login
+      try {
+        const rolSnap = await fdb.collection('roles').doc(u.uid).get();
+        if (rolSnap.exists){
+          const d = rolSnap.data();
+          usuarioActual = { user: d.usuario || '', nombre: d.nombre || '', rol: d.rol || 'mesero', uid: u.uid };
+          arrancado = true;
+          document.getElementById('pantalla-login').style.display = 'none';
+          iniciarApp();
+          return;
+        }
+        firebase.auth().signOut();
+      } catch(e){ /* sin permisos aún: se queda en login */ }
+    });
+    return;
+  }
+  // Modo local (sin Firebase): sesión simple del navegador
   const sesion = sessionStorage.getItem('frida_session');
   if (sesion){
     try {
       const u = JSON.parse(sesion);
-      // revalida que el usuario siga existiendo
       if (getConfig().usuarios[u.user]){
         usuarioActual = u;
         document.getElementById('pantalla-login').style.display = 'none';
