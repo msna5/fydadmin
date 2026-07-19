@@ -98,7 +98,6 @@ label{ display:block; font-size:12px; font-weight:700; letter-spacing:.06em; tex
 #pantalla-login .patron{ position:absolute; inset:0; opacity:.06; pointer-events:none; }
 .login-inner{ position:relative; text-align:center; animation:entrada .8s ease both; max-width:400px; width:100%; }
 @keyframes entrada{ from{ opacity:0; transform:translateY(26px);} to{ opacity:1; transform:translateY(0);} }
-.login-logo{ height:160px; width:auto; margin-bottom:14px; filter:drop-shadow(0 4px 10px rgba(12,17,72,.15)); }
 .login-inner h1{ font-size:24px; margin-bottom:4px; }
 .login-sub{ font-size:11px; letter-spacing:.32em; color:var(--azul-med); margin-bottom:26px; font-weight:500; }
 .login-card{
@@ -120,7 +119,6 @@ label{ display:block; font-size:12px; font-weight:700; letter-spacing:.06em; tex
   box-shadow:0 2px 14px rgba(12,17,72,.35);
 }
 .nav-marca{ display:flex; align-items:center; gap:10px; min-width:0; }
-.nav-marca svg{ height:36px; width:36px; flex-shrink:0; }
 .nav-marca .nombre{ font-family:var(--f-titulo); font-size:16px; color:var(--blanco); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 #nav-tabs{ display:flex; gap:2px; flex:1; justify-content:center; flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; }
 #nav-tabs::-webkit-scrollbar{ display:none; }
@@ -358,6 +356,42 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
 #modal-caja .acciones-form{ justify-content:flex-end; margin-top:8px; }
 
 /* ============================================================
+   SALON DE MESAS (mesero y admin)
+   ============================================================ */
+.mesas-leyenda{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; margin-bottom:18px; font-size:13px; color:#8a7a6d; }
+#grid-mesas{ display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:16px; }
+.mesa{
+  position:relative; background:var(--blanco); border-radius:16px; padding:18px 12px 14px;
+  text-align:center; box-shadow:var(--sombra); border:2px solid transparent; overflow:hidden;
+  transition:transform .2s, box-shadow .2s, border-color .2s, background .3s; animation:aparecer .35s ease both;
+}
+.mesa:hover{ transform:translateY(-4px); box-shadow:var(--sombra-hover); }
+.mesa .icono{ font-size:34px; line-height:1.1; transition:transform .3s; }
+.mesa:hover .icono{ transform:scale(1.12) rotate(-4deg); }
+.mesa .nombre{ font-family:var(--f-titulo); font-size:17px; color:var(--azul); margin:6px 0 2px; }
+.mesa .estado{ font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+.mesa .tiempo{ font-family:var(--f-mono); font-size:12px; color:#8a7a6d; min-height:17px; margin-top:2px; }
+.mesa.libre{ border-color:rgba(27,94,59,.30); cursor:pointer; }
+.mesa.libre .estado{ color:var(--exito); }
+.mesa.ocupada{ border-color:var(--rosa-osc); background:linear-gradient(180deg,#fff,#fdf1f2); animation:latido 2.2s ease-in-out infinite; }
+.mesa.ocupada .estado{ color:var(--rosa-osc); }
+@keyframes latido{ 0%,100%{ box-shadow:var(--sombra);} 50%{ box-shadow:0 0 0 7px rgba(196,136,138,.16);} }
+.mesa.liberando{ border-color:var(--alerta); }
+.mesa.liberando .estado{ color:var(--alerta); }
+.mesa.liberando::after{
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg, transparent 25%, rgba(122,59,0,.10) 50%, transparent 75%);
+  animation:barrido 1.2s linear infinite;
+}
+@keyframes barrido{ from{ transform:translateX(-100%);} to{ transform:translateX(100%);} }
+.mesa .acciones{ display:flex; gap:6px; justify-content:center; margin-top:10px; flex-wrap:wrap; position:relative; z-index:1; }
+.mesa .acciones button{
+  font-size:11.5px; padding:5px 10px; border-radius:7px; border:1.5px solid var(--azul-clar);
+  background:var(--blanco); color:var(--azul); font-weight:700; cursor:pointer; transition:all .15s;
+}
+.mesa .acciones button:hover{ background:var(--azul); color:var(--blanco); border-color:var(--azul); }
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 980px){
@@ -365,7 +399,7 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
   .grid-graficas, .grid-2{ grid-template-columns:1fr; }
   .comanda-grid{ grid-template-columns:1fr; }
   .egresos-grid{ grid-template-columns:1fr 1fr; }
-  .nav-marca .nombre{ display:none; }
+  .nav-marca .nombre{ font-size:14px; }
 }
 @media (max-width: 720px){
   #btn-hamburguesa{ display:block; }
@@ -393,57 +427,6 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
 <body>
 
 <!-- ============================================================
-     LOGO OFICIAL (SVG vectorial embebido — círculo talavera con
-     chiles, hierbas y cubiertos cruzados, fiel al logo original)
-     ============================================================ -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <defs>
-    <g id="logo-emblema">
-      <!-- Aro principal -->
-      <circle cx="100" cy="100" r="92" fill="none" stroke="#0C1148" stroke-width="4"/>
-      <!-- Chiles alrededor del aro -->
-      <g fill="#0C1148">
-        <path d="M148 22 q14 2 16 14 q2 10 -7 16 q-2 1 -3 -1 q-4 -12 -9 -22 q-2 -4 3 -7 Z"/>
-        <path d="M170 138 q12 6 10 18 q-2 10 -12 12 q-3 0 -3 -3 q1 -12 0 -22 q0 -5 5 -5 Z"/>
-        <path d="M52 172 q-12 6 -20 -2 q-7 -8 -2 -17 q2 -3 4 -1 q9 8 16 14 q4 3 2 6 Z"/>
-        <path d="M28 62 q-8 -10 -2 -20 q5 -9 15 -7 q3 1 2 4 q-4 11 -8 20 q-2 5 -7 3 Z"/>
-        <!-- Hojas / cilantro -->
-        <g transform="translate(100,14)">
-          <ellipse cx="0" cy="0" rx="4" ry="7"/><ellipse cx="-8" cy="3" rx="3.4" ry="6" transform="rotate(-40 -8 3)"/>
-          <ellipse cx="8" cy="3" rx="3.4" ry="6" transform="rotate(40 8 3)"/>
-        </g>
-        <g transform="translate(186,100) rotate(90)">
-          <ellipse cx="0" cy="0" rx="4" ry="7"/><ellipse cx="-8" cy="3" rx="3.4" ry="6" transform="rotate(-40 -8 3)"/>
-          <ellipse cx="8" cy="3" rx="3.4" ry="6" transform="rotate(40 8 3)"/>
-        </g>
-        <g transform="translate(100,186) rotate(180)">
-          <ellipse cx="0" cy="0" rx="4" ry="7"/><ellipse cx="-8" cy="3" rx="3.4" ry="6" transform="rotate(-40 -8 3)"/>
-          <ellipse cx="8" cy="3" rx="3.4" ry="6" transform="rotate(40 8 3)"/>
-        </g>
-        <g transform="translate(14,100) rotate(-90)">
-          <ellipse cx="0" cy="0" rx="4" ry="7"/><ellipse cx="-8" cy="3" rx="3.4" ry="6" transform="rotate(-40 -8 3)"/>
-          <ellipse cx="8" cy="3" rx="3.4" ry="6" transform="rotate(40 8 3)"/>
-        </g>
-        <!-- Aguacate y limón estilizados -->
-        <ellipse cx="60" cy="26" rx="10" ry="13" transform="rotate(-30 60 26)"/>
-        <circle cx="60" cy="24" r="4" fill="#F2D7D9" opacity=".9"/>
-        <circle cx="146" cy="172" r="10"/>
-        <path d="M146 164 v16 M138 172 h16 M140.5 166.5 l11 11 M151.5 166.5 l-11 11" stroke="#F2D7D9" stroke-width="1.6"/>
-      </g>
-      <!-- Cubiertos cruzados al centro -->
-      <g stroke="#0C1148" stroke-width="5" stroke-linecap="round" fill="none">
-        <path d="M78 78 L122 122"/>
-        <path d="M122 78 L78 122"/>
-      </g>
-      <g stroke="#0C1148" stroke-width="3" stroke-linecap="round" fill="none">
-        <path d="M117 73 v12 M123 73 v12 M129 73 v12"/>
-      </g>
-      <circle cx="78" cy="78" r="4.5" fill="#0C1148"/>
-    </g>
-  </defs>
-</svg>
-
-<!-- ============================================================
      SECCIÓN 3 · PANTALLA DE LOGIN
      ============================================================ -->
 <div id="pantalla-login">
@@ -464,7 +447,6 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
     <rect width="100%" height="100%" fill="url(#flores)"/>
   </svg>
   <div class="login-inner">
-    <svg class="login-logo" viewBox="0 0 200 200" role="img" aria-label="Logo La Casa de Frida y Diego"><use href="#logo-emblema"/></svg>
     <h1>La Casa de Frida y Diego</h1>
     <div class="login-sub">COCINANDO CON AMOR Y TRADICIÓN</div>
     <form class="login-card" id="form-login" autocomplete="off">
@@ -479,7 +461,7 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
       <button type="submit" class="btn btn-azul" style="width:100%">Entrar</button>
       <div class="login-error" id="login-error"></div>
     </form>
-    <div class="login-pie">Ojo de Agua, Estado de México · Jue a Dom</div>
+    <div class="login-pie">Tecámac, Estado de México · Jue a Dom</div>
   </div>
 </div>
 
@@ -491,7 +473,6 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
   <!-- SECCIÓN 4 · NAVBAR -->
   <nav id="navbar">
     <div class="nav-marca">
-      <svg viewBox="0 0 200 200" aria-hidden="true"><use href="#logo-emblema" style="filter:invert(1) brightness(2)"/></svg>
       <span class="nombre">La Casa de Frida y Diego</span>
     </div>
     <div id="nav-tabs"></div>
@@ -660,6 +641,19 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
     </section>
 
     <!-- ============================================================
+         SALÓN · 10 MESAS (vista principal del mesero)
+         ============================================================ -->
+    <section class="vista" id="vista-mesas">
+      <h2 class="vista-titulo">Salón · Mesas</h2>
+      <p class="vista-sub">Toca una mesa libre para sentar clientes · toma la comanda · libérala al cobrar</p>
+      <div class="mesas-leyenda">
+        <span>🟢 Libre</span><span>🌸 Ocupada</span><span>🟠 Liberando (limpieza)</span>
+        <span style="margin-left:auto" class="mono" id="mesas-resumen"></span>
+      </div>
+      <div id="grid-mesas"></div>
+    </section>
+
+    <!-- ============================================================
          SECCIÓN 7 · EGRESOS
          ============================================================ -->
     <section class="vista" id="vista-egresos">
@@ -691,7 +685,7 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
           </div>
           <div class="campo">
             <label for="e-concepto">Concepto / Proveedor</label>
-            <input type="text" id="e-concepto" placeholder="Ej. Mercado de Ojo de Agua">
+            <input type="text" id="e-concepto" placeholder="Ej. Mercado de Tecámac">
           </div>
           <div class="campo">
             <label for="e-monto">Monto ($)</label>
@@ -1147,7 +1141,11 @@ async function sincronizarTodo(){
   const cfg = getConfig();
   if (!cfg.scriptUrl){ toast('Configura primero la URL de Google Sheets', 'alerta'); return; }
   const pend = getPendientes();
-  if (!pend.length){ toast('✓ Nada pendiente de sincronizar', 'exito'); return; }
+  if (!pend.length){
+    await descargarDeSheets(false);      // nada que subir: solo baja lo nuevo
+    toast('✓ Todo al día con Google Sheets', 'exito');
+    return;
+  }
   const ventas = getVentas(), egresos = getEgresos();
   const lote = {
     ventas:  pend.filter(p => p.tipo === 'venta').map(p => ventas.find(v => v.id === p.id)).filter(Boolean),
@@ -1163,6 +1161,7 @@ async function sincronizarTodo(){
       toast('✓ Sincronización completa', 'exito');
     } else throw new Error(res && res.message || 'Respuesta inválida');
   } catch(err){ toast('Error al sincronizar: ' + err.message, 'error'); }
+  await descargarDeSheets(true);         // tras subir, baja lo de otros dispositivos
   renderConfig();
 }
 // Guarda la marca de tiempo de la última sincronización exitosa
@@ -1222,10 +1221,10 @@ document.getElementById('btn-salir').addEventListener('click', cerrarSesion);
    ============================================================ */
 const TABS = {
   admin: [
-    ['dashboard','📊','Dashboard'], ['comanda','📝','Comanda'], ['egresos','💸','Egresos'],
+    ['dashboard','📊','Dashboard'], ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'], ['egresos','💸','Egresos'],
     ['historial','📋','Historial'], ['exportar','⬇','Exportar'], ['config','⚙','Config'], ['ia','🤖','IA']
   ],
-  mesero: [ ['dashboard','📊','Resumen'], ['comanda','📝','Comanda'] ]
+  mesero: [ ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'], ['dashboard','📊','Resumen'] ]
 };
 let vistaActual = 'dashboard';
 
@@ -1248,6 +1247,7 @@ function irA(id){
   document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
   document.getElementById('vista-' + id).classList.add('activa');
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('activa', t.dataset.vista === id));
+  if (id === 'mesas')     renderMesas();
   if (id === 'dashboard') renderDashboard();
   if (id === 'historial') renderHistorial();
   if (id === 'exportar')  renderResumenExport();
@@ -2265,6 +2265,136 @@ document.getElementById('preguntas-rapidas').addEventListener('click', e => {
 });
 
 /* ============================================================
+   SINCRONIZACIÓN DESCENDENTE (pull) — multi-dispositivo
+   Descarga los registros de Google Sheets y los fusiona por ID,
+   de modo que todos los dispositivos vean la misma información.
+   ============================================================ */
+let _pullEnCurso = false;
+// Fusiona registros remotos con los locales (por ID, sin duplicar)
+function fusionarRemotos(llave, remotos){
+  const local = DB.get(llave, []);
+  const ids = new Set(local.map(r => r.id));
+  let nuevos = 0;
+  (remotos || []).forEach(r => {
+    if (r && r.id && !ids.has(r.id)){ r.sincronizado = true; local.push(r); nuevos++; }
+  });
+  if (nuevos) DB.set(llave, local);
+  return nuevos;
+}
+// Re-pinta la vista activa cuando llegan datos nuevos
+function refrescarVistaActual(){
+  if (vistaActual === 'dashboard') renderDashboard();
+  if (vistaActual === 'historial') renderHistorial();
+  if (vistaActual === 'exportar')  renderResumenExport();
+}
+// Descarga todo de Sheets y lo integra; silencioso = sin toasts de error
+async function descargarDeSheets(avisar){
+  const cfg = getConfig();
+  if (!cfg.scriptUrl || _pullEnCurso) return;
+  _pullEnCurso = true;
+  try {
+    const res = await postScript({ action:'getAll' });
+    if (res && res.status === 'ok'){
+      const nuevos = fusionarRemotos(LS.ventas, res.ventas) + fusionarRemotos(LS.egresos, res.egresos);
+      if (nuevos > 0){
+        refrescarVistaActual();
+        toast('↓ ' + nuevos + ' registro' + (nuevos === 1 ? '' : 's') + ' nuevo' + (nuevos === 1 ? '' : 's') + ' desde Sheets', 'exito');
+      }
+      registrarSyncExitosa();
+    } else if (avisar) toast('Sheets respondió con error al descargar', 'alerta');
+  } catch(err){
+    if (avisar) toast('No se pudo descargar de Sheets: ' + err.message, 'alerta');
+  }
+  _pullEnCurso = false;
+}
+
+/* ============================================================
+   SALÓN DE MESAS — 10 mesas animadas (libre / ocupada / liberando)
+   ============================================================ */
+const NUM_MESAS = 10;
+const LIBERANDO_SEG = 8;      // segundos de "limpieza" antes de quedar libre
+// Lee (y siembra la primera vez) el estado de las 10 mesas
+function getMesas(){
+  let m = DB.get('frida_mesas', null);
+  if (!Array.isArray(m) || m.length !== NUM_MESAS){
+    m = Array.from({ length: NUM_MESAS }, (_, i) => ({ n: i+1, estado: 'libre', desde: null }));
+    DB.set('frida_mesas', m);
+  }
+  return m;
+}
+function setMesas(m){ DB.set('frida_mesas', m); }
+// Tiempo transcurrido legible (mm:ss o Xh Ym)
+function transcurrido(desde){
+  if (!desde) return '';
+  const s = Math.max(0, Math.floor((Date.now() - desde) / 1000));
+  const mm = Math.floor(s / 60), hh = Math.floor(mm / 60);
+  return hh > 0 ? hh + 'h ' + String(mm % 60).padStart(2,'0') + 'm'
+                : String(mm).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
+}
+// Pinta el salón con estado, tiempo y acciones de cada mesa
+function renderMesas(){
+  const cont = document.getElementById('grid-mesas');
+  if (!cont) return;
+  const mesas = getMesas();
+  cont.innerHTML = mesas.map(m => {
+    const icono = m.estado === 'libre' ? '🪑' : m.estado === 'ocupada' ? '🍽️' : '🧽';
+    const etiqueta = m.estado === 'libre' ? 'Libre' : m.estado === 'ocupada' ? 'Ocupada' : 'Liberando…';
+    let acciones = '';
+    if (m.estado === 'libre')     acciones = '<button data-n="' + m.n + '" data-a="ocupar">Sentar clientes</button>';
+    if (m.estado === 'ocupada')   acciones = '<button data-n="' + m.n + '" data-a="comanda">📝 Comanda</button><button data-n="' + m.n + '" data-a="liberar">Liberar</button>';
+    if (m.estado === 'liberando') acciones = '<button data-n="' + m.n + '" data-a="listo">✓ Lista</button>';
+    return '<div class="mesa ' + m.estado + '" data-n="' + m.n + '">' +
+      '<div class="icono">' + icono + '</div>' +
+      '<div class="nombre">Mesa ' + m.n + '</div>' +
+      '<div class="estado">' + etiqueta + '</div>' +
+      '<div class="tiempo" data-t="' + m.n + '">' + transcurrido(m.desde) + '</div>' +
+      '<div class="acciones">' + acciones + '</div></div>';
+  }).join('');
+  const libres = mesas.filter(x => x.estado === 'libre').length;
+  const res = document.getElementById('mesas-resumen');
+  if (res) res.textContent = libres + ' de ' + NUM_MESAS + ' libres';
+}
+// Ejecuta una acción sobre una mesa (ocupar, comanda, liberar, listo)
+function accionMesa(n, a){
+  const mesas = getMesas();
+  const m = mesas.find(x => x.n === n); if (!m) return;
+  if (a === 'ocupar'){ m.estado = 'ocupada'; m.desde = Date.now(); }
+  if (a === 'liberar'){ m.estado = 'liberando'; m.desde = Date.now(); }
+  if (a === 'listo'){ m.estado = 'libre'; m.desde = null; }
+  if (a === 'comanda'){
+    setMesas(mesas);
+    irA('comanda');
+    const notas = document.getElementById('c-notas');
+    if (!notas.value.includes('Mesa ' + n)) notas.value = 'Mesa ' + n + (notas.value ? ' · ' + notas.value : '');
+    return;
+  }
+  setMesas(mesas);
+  renderMesas();
+}
+// Reloj del salón: actualiza tiempos y concluye la limpieza automáticamente
+function tickMesas(){
+  if (vistaActual !== 'mesas') return;
+  const mesas = getMesas();
+  let cambio = false;
+  mesas.forEach(m => {
+    if (m.estado === 'liberando' && Date.now() - m.desde > LIBERANDO_SEG * 1000){
+      m.estado = 'libre'; m.desde = null; cambio = true;
+    }
+  });
+  if (cambio){ setMesas(mesas); renderMesas(); return; }
+  mesas.forEach(m => {
+    const el = document.querySelector('[data-t="' + m.n + '"]');
+    if (el) el.textContent = m.estado === 'liberando' ? 'limpiando ' + transcurrido(m.desde) : transcurrido(m.desde);
+  });
+}
+document.getElementById('grid-mesas').addEventListener('click', e => {
+  const b = e.target.closest('button[data-a]');
+  if (b){ accionMesa(+b.dataset.n, b.dataset.a); return; }
+  const card = e.target.closest('.mesa.libre');
+  if (card) accionMesa(+card.dataset.n, 'ocupar');
+});
+
+/* ============================================================
    INICIALIZACIÓN
    ============================================================ */
 // Siembra el catálogo inicial y la configuración la primera vez que se abre
@@ -2281,12 +2411,18 @@ function iniciarApp(){
   limpiarComanda();
   limpiarEgreso();
   actualizarBadgeSync();
-  irA(usuarioActual.rol === 'mesero' ? 'comanda' : 'dashboard');
+  irA(usuarioActual.rol === 'mesero' ? 'mesas' : 'dashboard');
   burbuja('¡Hola' + (usuarioActual ? ', ' + usuarioActual.nombre : '') + '! Soy tu asistente de análisis. Pregúntame por tu margen, tu mejor día o usa los botones de arriba. 🌮', 'bot');
-  // Reintenta sincronización pendiente al arrancar si hay conexión configurada
-  if (getConfig().scriptUrl && getPendientes().length && navigator.onLine){
-    setTimeout(() => sincronizarTodo(), 1500);
+  // Reloj del salón de mesas (tiempos y fin de limpieza)
+  setInterval(tickMesas, 1000);
+  // Sincronización bidireccional: al arrancar sube pendientes y baja lo nuevo…
+  if (getConfig().scriptUrl && navigator.onLine){
+    setTimeout(() => { getPendientes().length ? sincronizarTodo() : descargarDeSheets(false); }, 1200);
   }
+  // …y cada 60 segundos revisa si otros dispositivos registraron algo
+  setInterval(() => {
+    if (getConfig().scriptUrl && navigator.onLine) descargarDeSheets(false);
+  }, 60000);
 }
 // Punto de entrada
 sembrarDatos();
@@ -2310,41 +2446,44 @@ sembrarDatos();
 </body>
 </html>
 <!-- ═══════════════════════════════════════════════════════════════════
-     CÓDIGO GOOGLE APPS SCRIPT — copiar TODO este bloque en
-     Extensiones → Apps Script de tu Google Sheet y publicar como
-     Web App (Ejecutar como: Yo · Acceso: Cualquier persona).
+     CÓDIGO GOOGLE APPS SCRIPT (v2, sincronización bidireccional)
+     Copiar TODO el bloque siguiente en Extensiones → Apps Script de tu
+     Google Sheet, reemplazando el código anterior, y actualizar la
+     implementación (Administrar implementaciones → nueva versión).
      También se entrega como archivo separado: google_apps_script.gs
-═══════════════════════════════════════════════════════════════════ -->
-<!--
 ```javascript
 /**
  * ═══════════════════════════════════════════════════════════════
- *  GOOGLE APPS SCRIPT · La Casa de Frida y Diego
- *  Backend de sincronización para sistema_frida_diego.html
+ *  GOOGLE APPS SCRIPT · La Casa de Frida y Diego  (v2)
+ *  Backend de sincronización BIDIRECCIONAL para sistema_frida_diego.html
  *
- *  INSTALACIÓN:
- *  1. Crea un Google Sheet nuevo (ej. "FridaDiego Datos")
- *  2. Extensiones → Apps Script → pega TODO este código
- *  3. Implementar → Nueva implementación → tipo "Aplicación web"
- *     · Ejecutar como: Yo
- *     · Quién tiene acceso: Cualquier persona   ← IMPORTANTE
- *  4. Copia la URL /exec y pégala en Configuración del sistema
+ *  NOVEDAD v2: acción getAll → los dispositivos DESCARGAN los
+ *  registros de la hoja, así todos ven la misma información.
+ *
+ *  INSTALACIÓN / ACTUALIZACIÓN:
+ *  1. Abre tu Google Sheet → Extensiones → Apps Script
+ *  2. BORRA el código anterior y pega TODO este archivo
+ *  3. Implementar → Administrar implementaciones → ✏ editar →
+ *     Versión: "Nueva versión" → Implementar
+ *     (si es la primera vez: Nueva implementación → Aplicación web ·
+ *      Ejecutar como: Yo · Acceso: Cualquier persona)
+ *  4. La URL /exec no cambia si actualizas la implementación existente
  *
  *  CORS: al desplegarse como Web App con acceso "Cualquier persona",
- *  las respuestas de ContentService se sirven desde script.googleusercontent.com
- *  con los headers CORS necesarios para consumirse desde GitHub Pages
- *  o cualquier origen. El cliente envía el body como text/plain para
- *  evitar el preflight OPTIONS (que Apps Script no soporta).
+ *  las respuestas de ContentService se sirven con los headers CORS
+ *  necesarios para consumirse desde GitHub Pages o cualquier origen.
+ *  El cliente envía el body como text/plain para evitar el preflight
+ *  OPTIONS (que Apps Script no soporta).
  * ═══════════════════════════════════════════════════════════════
  */
 
 // Si se deja vacío usa el Sheet contenedor del script (recomendado)
 const SPREADSHEET_ID = '';
 
-// Headers oficiales de cada hoja
+// Headers oficiales de cada hoja (JSON guarda el registro completo para sincronización exacta)
 const HEADERS = {
-  'Ventas':    ['ID','Fecha','Día','Semana','Canal','Forma de Pago','Turno','Artículos (texto)','Total','Notas','Timestamp'],
-  'Egresos':   ['ID','Fecha','Día','Semana','Categoría','Concepto','Monto','Forma de Pago','Factura','Notas','Timestamp'],
+  'Ventas':    ['ID','Fecha','Día','Semana','Canal','Forma de Pago','Turno','Artículos (texto)','Total','Notas','Timestamp','JSON'],
+  'Egresos':   ['ID','Fecha','Día','Semana','Categoría','Concepto','Monto','Forma de Pago','Factura','Notas','Timestamp','JSON'],
   'Platillos': ['ID','Nombre','Categoría','Precio','Activo'],
   'Config':    ['Clave','Valor']
 };
@@ -2364,6 +2503,7 @@ function doPost(e) {
       case 'addVenta':      out = addVenta(data);      break;
       case 'addEgreso':     out = addEgreso(data);     break;
       case 'syncBatch':     out = syncBatch(data);     break;
+      case 'getAll':        out = getAll();            break;
       case 'getPlatillos':  out = getPlatillos();      break;
       case 'savePlatillos': out = savePlatillos(data); break;
       case 'getConfig':     out = getConfig();         break;
@@ -2383,7 +2523,7 @@ function respuesta(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// Obtiene (o crea con headers) la hoja indicada
+// Obtiene (o crea con headers) la hoja indicada; agrega la columna JSON a hojas antiguas
 function hoja(nombre) {
   const ss = SPREADSHEET_ID
     ? SpreadsheetApp.openById(SPREADSHEET_ID)
@@ -2394,6 +2534,10 @@ function hoja(nombre) {
     sh.appendRow(HEADERS[nombre]);
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, HEADERS[nombre].length).setFontWeight('bold').setBackground('#E8EAF6');
+  } else if (HEADERS[nombre].indexOf('JSON') >= 0) {
+    // Migración: hojas creadas con la v1 no tienen la columna JSON
+    const h = sh.getRange(1, 1, 1, HEADERS[nombre].length).getValues()[0];
+    if (h.indexOf('JSON') < 0) sh.getRange(1, HEADERS[nombre].length).setValue('JSON');
   }
   return sh;
 }
@@ -2406,17 +2550,17 @@ function existeId(sh, id) {
   return ids.some(function(f) { return f[0] === id; });
 }
 
-// Convierte una venta a fila de hoja
+// Convierte una venta a fila de hoja (la última celda guarda el objeto completo)
 function filaVenta(v) {
   const items = (v.items || []).map(function(i) {
     return i.cantidad + 'x ' + i.nombre + ' @' + i.precioUnit;
   }).join(' | ');
-  return [v.id, v.fecha, v.dia, v.semana, v.canal, v.pago, v.turno, items, v.total, v.notas || '', new Date(v.ts || Date.now())];
+  return [v.id, v.fecha, v.dia, v.semana, v.canal, v.pago, v.turno, items, v.total, v.notas || '', new Date(v.ts || Date.now()), JSON.stringify(v)];
 }
 
 // Convierte un egreso a fila de hoja
 function filaEgreso(g) {
-  return [g.id, g.fecha, g.dia, g.semana, g.categoria, g.concepto, g.monto, g.pago, g.factura ? 'Sí' : 'No', g.notas || '', new Date(g.ts || Date.now())];
+  return [g.id, g.fecha, g.dia, g.semana, g.categoria, g.concepto, g.monto, g.pago, g.factura ? 'Sí' : 'No', g.notas || '', new Date(g.ts || Date.now()), JSON.stringify(g)];
 }
 
 // Agrega una venta a la hoja 'Ventas' (crea la hoja si no existe)
@@ -2445,6 +2589,65 @@ function syncBatch(data) {
     if (!existeId(shE, g.id)) { shE.appendRow(filaEgreso(g)); subidas++; }
   });
   return { status: 'ok', subidas: subidas };
+}
+
+// ★ Descarga TODOS los registros para que cada dispositivo vea lo mismo
+function getAll() {
+  return {
+    status: 'ok',
+    ventas: leerRegistros('Ventas'),
+    egresos: leerRegistros('Egresos'),
+    timestamp: new Date().toISOString()
+  };
+}
+
+// Lee una hoja y reconstruye los objetos (usa la columna JSON; si falta, reconstruye de las columnas v1)
+function leerRegistros(nombre) {
+  const sh = hoja(nombre);
+  const ultima = sh.getLastRow();
+  if (ultima < 2) return [];
+  const cols = sh.getLastColumn();
+  const headers = sh.getRange(1, 1, 1, cols).getValues()[0];
+  const idxJson = headers.indexOf('JSON');
+  const filas = sh.getRange(2, 1, ultima - 1, cols).getValues();
+  return filas.map(function(f) {
+    if (idxJson >= 0 && f[idxJson]) {
+      try { return JSON.parse(f[idxJson]); } catch (e) { /* cae a reconstrucción */ }
+    }
+    return nombre === 'Ventas' ? ventaDesdeFila(f) : egresoDesdeFila(f);
+  }).filter(function(r) { return r && r.id; });
+}
+
+// Reconstruye una venta desde columnas v1 (sin JSON), parseando "2x Pozole @95 | …"
+function ventaDesdeFila(f) {
+  const items = String(f[7] || '').split(' | ').map(function(s) {
+    const m = s.match(/^(\d+)x (.+) @([\d.]+)$/);
+    return m ? { nombre: m[2], cantidad: Number(m[1]), precioUnit: Number(m[3]), subtotal: Number((m[1] * m[3]).toFixed(2)) } : null;
+  }).filter(function(x) { return x; });
+  return {
+    id: f[0], fecha: fechaISO(f[1]), dia: f[2], semana: Number(f[3]) || 0,
+    canal: f[4], pago: f[5], turno: f[6], items: items,
+    total: Number(f[8]) || 0, notas: f[9] || '', sincronizado: true, ts: tsDe(f[10])
+  };
+}
+
+// Reconstruye un egreso desde columnas v1
+function egresoDesdeFila(f) {
+  return {
+    id: f[0], fecha: fechaISO(f[1]), dia: f[2], semana: Number(f[3]) || 0,
+    categoria: f[4], concepto: f[5], monto: Number(f[6]) || 0, pago: f[7],
+    factura: f[8] === 'Sí' || f[8] === true, notas: f[9] || '', sincronizado: true, ts: tsDe(f[10])
+  };
+}
+
+// Normaliza fechas de celda (Date u texto) a 'YYYY-MM-DD'
+function fechaISO(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  return String(v).slice(0, 10);
+}
+// Normaliza timestamps de celda a milisegundos
+function tsDe(v) {
+  return v instanceof Date ? v.getTime() : (Number(v) || Date.now());
 }
 
 // Lee la hoja 'Platillos' y devuelve el catálogo como array de objetos
