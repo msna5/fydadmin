@@ -1253,10 +1253,23 @@ function marcarSincronizado(tipo, id){
   actualizarBadgeSync();
 }
 // Intenta subir un registro individual en segundo plano (no bloquea la UI)
+// Marca un registro local como confirmado por la nube
+function marcarConfirmado(tipo, id){
+  const llave = tipo === 'venta' ? LS.ventas : LS.egresos;
+  const arr = DB.get(llave, []);
+  const reg = arr.find(x => x.id === id);
+  if (reg && !reg.sincronizado){ reg.sincronizado = true; DB.set(llave, arr); }
+  actualizarBadgeSync();
+}
 function sincronizarRegistro(tipo, obj){
   if (fbListo){
     // Firestore guarda y propaga al instante (y encola solo si no hay internet)
-    fdb.collection(tipo === 'venta' ? 'ventas' : 'egresos').doc(obj.id).set(obj).catch(() => {});
+    fdb.collection(tipo === 'venta' ? 'ventas' : 'egresos').doc(obj.id).set(obj)
+      .then(() => marcarConfirmado(tipo, obj.id))   // clave para roles sin permiso de lectura (mesero)
+      .catch(err => {
+        // permission-denied en un rol de solo-creación = el documento ya existía en la nube
+        if (/permission/i.test(String(err))) marcarConfirmado(tipo, obj.id);
+      });
     return;
   }
   if (!getScriptUrl()){ marcarPendiente(tipo, obj.id); return; }
@@ -1271,8 +1284,8 @@ function sincronizarRegistro(tipo, obj){
 async function sincronizarTodo(){
   if (fbListo){
     let n = 0;
-    getVentas().filter(v => !v.sincronizado).forEach(v => { fdb.collection('ventas').doc(v.id).set(v).catch(() => {}); n++; });
-    getEgresos().filter(g => !g.sincronizado).forEach(g => { fdb.collection('egresos').doc(g.id).set(g).catch(() => {}); n++; });
+    getVentas().filter(v => !v.sincronizado).forEach(v => { sincronizarRegistro('venta', v); n++; });
+    getEgresos().filter(g => !g.sincronizado).forEach(g => { sincronizarRegistro('egreso', g); n++; });
     toast(n ? '↑ Reenviando ' + n + ' registro' + (n === 1 ? '' : 's') + ' a la nube…' : '✓ Todo al día · tiempo real activo', 'exito');
     return;
   }
@@ -1376,6 +1389,8 @@ document.getElementById('form-login').addEventListener('submit', async e => {
     }
     return;
   }
+  // Con Firebase configurado, jamás degradar a login local (seguridad)
+  if (FIREBASE_CONFIG){ err.textContent = 'Se necesita internet para iniciar sesión. Revisa tu conexión y recarga.'; return; }
   // Modo local (solo si Firebase no está configurado)
   const u = intentarLogin(usuario, pass);
   if (!u){ err.textContent = 'Usuario o contraseña incorrectos'; return; }
@@ -2819,6 +2834,8 @@ iniciarFirebase();
     });
     return;
   }
+  // Con Firebase configurado, jamás degradar a sesión local
+  if (FIREBASE_CONFIG) return;
   // Modo local (sin Firebase): sesión simple del navegador
   const sesion = sessionStorage.getItem('frida_session');
   if (sesion){
