@@ -395,6 +395,17 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
 }
 .mesa .acciones button:hover{ background:var(--azul); color:var(--blanco); border-color:var(--azul); }
 
+/* Comanda en vivo dentro de la tarjeta de mesa */
+.mesa-meta{ font-size:12px; color:var(--azul-med); font-weight:700; margin-top:2px; }
+.mesa-items{ list-style:none; margin:8px 0 0; padding:6px 9px; background:rgba(232,234,246,.55); border-radius:9px; text-align:left; font-size:11.5px; max-height:118px; overflow-y:auto; }
+.mesa-items li{ display:flex; justify-content:space-between; gap:6px; padding:1.5px 0; }
+.mesa-items li span:last-child{ font-family:var(--f-mono); white-space:nowrap; }
+.mesa-total{ font-family:var(--f-mono); font-weight:700; color:var(--azul); margin-top:5px; font-size:14.5px; }
+#comanda-mesa-banner{ display:none; background:var(--azul); color:var(--blanco); border-radius:11px; padding:10px 16px; margin-bottom:16px; font-size:13.5px; align-items:center; gap:8px; flex-wrap:wrap; }
+#comanda-mesa-banner b{ font-family:var(--f-titulo); font-size:15px; }
+#comanda-mesa-banner button{ margin-left:auto; background:rgba(255,255,255,.15); border:none; color:#fff; border-radius:7px; padding:5px 11px; font-size:12px; cursor:pointer; }
+#comanda-mesa-banner button:hover{ background:rgba(255,255,255,.3); }
+
 /* ============================================================
    RESPONSIVE
    ============================================================ */
@@ -575,6 +586,7 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
     <section class="vista" id="vista-comanda">
       <h2 class="vista-titulo">Nueva comanda</h2>
       <p class="vista-sub">Registra la venta y sigue con la siguiente mesa</p>
+      <div id="comanda-mesa-banner">🍽 <b id="cmb-mesa"></b><span id="cmb-info"></span><button id="cmb-soltar" type="button">Desvincular</button></div>
 
       <div class="comanda-grid">
         <!-- Columna izquierda: datos generales -->
@@ -783,6 +795,11 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
       <div class="card" style="margin-bottom:18px">
         <h3>Resumen de exportación</h3>
         <p id="exp-resumen" style="font-size:15px" class="mono"></p>
+        <div class="fila-flex" style="margin-top:14px">
+          <div class="campo" style="margin:0"><label for="exp-desde">Desde</label><input type="date" id="exp-desde"></div>
+          <div class="campo" style="margin:0"><label for="exp-hasta">Hasta</label><input type="date" id="exp-hasta"></div>
+          <button class="btn btn-outline btn-sm" id="exp-todo">Todo el período</button>
+        </div>
       </div>
 
       <div class="grid-2">
@@ -838,6 +855,7 @@ details.bloque .cuerpo{ padding:4px 22px 22px; border-top:1px dashed var(--azul-
         <div class="cuerpo">
           <div class="fila-flex" style="margin-bottom:12px">
             <button class="btn btn-outline btn-sm" id="btn-add-platillo">+ Agregar platillo</button>
+            <button class="btn btn-rosa btn-sm" id="btn-menu-oficial">🍽 Cargar menú oficial</button>
             <button class="btn btn-azul btn-sm" id="btn-guardar-catalogo">Guardar catálogo</button>
             <span id="cat-msg"></span>
           </div>
@@ -984,18 +1002,49 @@ const LS = {
   pendientes: 'frida_pendientes'
 };
 
-// Catálogo inicial (sin precio; el usuario lo configura en Config)
+// Menú oficial con precios (extraído de lacasadefridaydiego.com.mx/#menu)
 const CATALOGO_INICIAL = [
-  ['Plato fuerte','Pozole rojo'],['Plato fuerte','Pozole verde'],['Plato fuerte','Pozole blanco'],
-  ['Plato fuerte','Enfrijoladas'],['Plato fuerte','Enchiladas verdes'],['Plato fuerte','Enchiladas rojas'],
-  ['Plato fuerte','Chilaquiles rojos'],['Plato fuerte','Chilaquiles verdes'],['Plato fuerte','Sopa de lima'],
-  ['Plato fuerte','Caldo tlalpeño'],
-  ['Antojito','Tacos de guisado (pieza)'],['Antojito','Sopes'],['Antojito','Tlayudas'],
-  ['Antojito','Tostadas'],['Antojito','Memelas'],['Antojito','Quesadillas'],
-  ['Bebida','Agua fresca'],['Bebida','Jamaica'],['Bebida','Horchata'],['Bebida','Tepache'],
-  ['Bebida','Refresco'],['Bebida','Cerveza'],['Bebida','Agua mineral'],
-  ['Postre','Flan casero'],['Postre','Arroz con leche'],['Postre','Pay de queso'],['Postre','Buñuelos'],
-  ['Extra','Tortillas (orden)'],['Extra','Crema'],['Extra','Queso fresco'],['Extra','Chile de árbol']
+  ['Antojito','Huarache sencillo',35],
+  ['Antojito','Huarache con guisado / quesillo',45],
+  ['Antojito','Huarache con carne (suadero · bistec · longaniza)',70],
+  ['Antojito','Taco sencillo (1 ingrediente)',35],
+  ['Antojito','Taco con quesillo / campechano',40],
+  ['Antojito','Taco 3 ingredientes',45],
+  ['Antojito','Gringa sencilla (1 ingrediente)',55],
+  ['Antojito','Gringa con quesillo / campechana',60],
+  ['Antojito','Gringa 3 ingredientes',65],
+  ['Antojito','Quesadilla con guisado',30],
+  ['Antojito','Quesadilla con carne',35],
+  ['Antojito','Quesadilla con quesillo / campechana',35],
+  ['Antojito','Pambazo sencillo',33],
+  ['Antojito','Pambazo con guisado',40],
+  ['Antojito','Pambazo con carne',45],
+  ['Antojito','Tostada sencilla (1 ingrediente)',30],
+  ['Antojito','Tostada combinada (2 ingredientes)',33],
+  ['Antojito','Gordita con guisado',30],
+  ['Antojito','Gordita con carne',35],
+  ['Antojito','Gordita con quesillo / campechana',35],
+  ['Antojito','Gordita 3 ingredientes',40],
+  ['Antojito','Sope sencillo',33],
+  ['Antojito','Sope con guisado',40],
+  ['Antojito','Sope con carne (suadero · bistec · longaniza)',45],
+  ['Antojito','Sope con quesillo / campechano (2 ingredientes)',40],
+  ['Bebida','Malteada (café · chocolate · fresa)',50],
+  ['Bebida','Café americano',27],
+  ['Bebida','Café lechero',45],
+  ['Bebida','Capuccino',50],
+  ['Bebida','Moka',50],
+  ['Bebida','Cold brew',45],
+  ['Bebida','Frappe (café · moka · chocolate · fresa · mazapán · Oreo)',60],
+  ['Bebida','Frappe con crema batida',70],
+  ['Bebida','Smoothie frutos rojos',70],
+  ['Bebida','Chocolate Abuelita (frío o caliente)',50],
+  ['Bebida','Té de frutas',27],
+  ['Bebida','Jarritos',27],
+  ['Bebida','Boing',27],
+  ['Bebida','Coca Cola',30],
+  ['Bebida','Sangría / Squirt / Mineral preparada',45],
+  ['Extra','Queso / campechano adicional',5]
 ];
 
 const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -1761,6 +1810,7 @@ document.getElementById('items-body').addEventListener('input', e => {
   const it = comandaItems[i];
   fila.querySelector('td.num').textContent = money((it.cantidad||0)*(it.precioUnit||0));
   document.getElementById('c-total').textContent = money(comandaItems.reduce((s,x) => s + (x.cantidad||0)*(x.precioUnit||0), 0));
+  sincronizarMesaComanda();
 });
 document.getElementById('items-body').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
@@ -1769,11 +1819,13 @@ document.getElementById('items-body').addEventListener('click', e => {
   if (b.dataset.op === '+') comandaItems[i].cantidad++;
   if (b.dataset.op === '-') comandaItems[i].cantidad = Math.max(1, comandaItems[i].cantidad - 1);
   renderItems();
+  sincronizarMesaComanda();
 });
 // Agrega una fila (desde catálogo o en blanco)
 function agregarItem(nombre, precio){
   comandaItems.push({ nombre: nombre || '', cantidad: 1, precioUnit: precio || 0 });
   renderItems();
+  sincronizarMesaComanda();
 }
 document.getElementById('btn-linea-blanco').addEventListener('click', () => agregarItem('', 0));
 
@@ -1832,6 +1884,7 @@ document.addEventListener('click', e => {
 /* ---------- Guardar comanda ---------- */
 // Restablece el formulario de comanda a su estado inicial
 function limpiarComanda(){
+  if (typeof mesaActiva !== 'undefined' && mesaActiva != null && typeof desvincularMesa === 'function') desvincularMesa();
   comandaItems = [];
   document.getElementById('c-fecha').value = hoyISO();
   document.getElementById('c-canal').selectedIndex = 0;
@@ -1864,6 +1917,20 @@ function guardarComanda(){
   const ventas = getVentas(); ventas.push(venta); DB.set(LS.ventas, ventas);
   sincronizarRegistro('venta', venta);          // async, no bloquea
   toast('✓ Comanda guardada · ' + money(venta.total), 'exito');
+  // Si la comanda venía de una mesa: la vacía y la pasa a limpieza para todos
+  if (typeof mesaActiva !== 'undefined' && mesaActiva != null){
+    const mesas = getMesas();
+    const m = mesas.find(x => x.n === mesaActiva);
+    if (m){
+      m.estado = 'liberando'; m.desde = Date.now(); m.ts = Date.now();
+      m.items = []; m.total = 0;
+      setMesas(mesas); empujarMesa(m);
+    }
+    desvincularMesa();
+    limpiarComanda();
+    irA('mesas');
+    return;
+  }
   limpiarComanda();
 }
 document.getElementById('btn-guardar-comanda').addEventListener('click', guardarComanda);
@@ -2031,16 +2098,32 @@ document.getElementById('h-next').addEventListener('click', () => { histEstado.p
 /* ============================================================
    SECCIÓN 9 · EXPORTAR
    ============================================================ */
-// Muestra el resumen de lo que se va a exportar
+// Rango de exportación elegido por el usuario (vacío = todo)
+let expDesde = '', expHasta = '';
+function ventasExport(){ return getVentas().filter(r => (!expDesde || r.fecha >= expDesde) && (!expHasta || r.fecha <= expHasta)); }
+function egresosExport(){ return getEgresos().filter(r => (!expDesde || r.fecha >= expDesde) && (!expHasta || r.fecha <= expHasta)); }
+// Muestra el resumen de lo que se va a exportar según el rango elegido
 function renderResumenExport(){
-  const v = getVentas(), g = getEgresos();
-  const fechas = [...v.map(x => x.fecha), ...g.map(x => x.fecha)].sort();
-  const rango = fechas.length ? 'período ' + fechaBonita(fechas[0]) + ' al ' + fechaBonita(fechas[fechas.length-1]) : 'sin registros aún';
+  const v = ventasExport(), g = egresosExport();
+  let rango;
+  if (expDesde || expHasta){
+    rango = 'período ' + (expDesde ? fechaBonita(expDesde) : 'inicio') + ' al ' + (expHasta ? fechaBonita(expHasta) : 'hoy');
+  } else {
+    const fechas = [...v.map(x => x.fecha), ...g.map(x => x.fecha)].sort();
+    rango = fechas.length ? 'período ' + fechaBonita(fechas[0]) + ' al ' + fechaBonita(fechas[fechas.length-1]) : 'sin registros aún';
+  }
   document.getElementById('exp-resumen').textContent = 'Exportando: ' + v.length + ' ventas · ' + g.length + ' egresos · ' + rango;
 }
+document.getElementById('exp-desde').addEventListener('change', e => { expDesde = e.target.value; renderResumenExport(); });
+document.getElementById('exp-hasta').addEventListener('change', e => { expHasta = e.target.value; renderResumenExport(); });
+document.getElementById('exp-todo').addEventListener('click', () => {
+  expDesde = expHasta = '';
+  document.getElementById('exp-desde').value = ''; document.getElementById('exp-hasta').value = '';
+  renderResumenExport();
+});
 // Filas planas de ventas para hojas de cálculo
 function filasVentas(){
-  return getVentas().map(v => ({
+  return ventasExport().map(v => ({
     ID: v.id, Fecha: v.fecha, 'Día': v.dia, Semana: v.semana, Canal: v.canal,
     'Forma de Pago': v.pago, Turno: v.turno,
     'Artículos': (v.items||[]).map(i => i.cantidad + 'x ' + i.nombre + ' @' + i.precioUnit).join(' | '),
@@ -2049,7 +2132,7 @@ function filasVentas(){
 }
 // Filas planas de egresos
 function filasEgresos(){
-  return getEgresos().map(e => ({
+  return egresosExport().map(e => ({
     ID: e.id, Fecha: e.fecha, 'Día': e.dia, Semana: e.semana, 'Categoría': e.categoria,
     Concepto: e.concepto, Monto: e.monto, 'Forma de Pago': e.pago,
     Factura: e.factura ? 'Sí' : 'No', Notas: e.notas, Timestamp: new Date(e.ts).toLocaleString('es-MX')
@@ -2058,7 +2141,7 @@ function filasEgresos(){
 // Genera y descarga el Excel de 5 hojas con SheetJS
 function exportarXLSX(){
   if (typeof XLSX === 'undefined'){ toast('SheetJS no cargó — se requiere internet para exportar Excel', 'error'); return; }
-  const ventas = getVentas(), egresos = getEgresos();
+  const ventas = ventasExport(), egresos = egresosExport();
   if (!ventas.length && !egresos.length){ toast('No hay datos para exportar todavía', 'alerta'); return; }
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filasVentas()), 'Ventas');
@@ -2200,6 +2283,15 @@ document.getElementById('tabla-catalogo').addEventListener('click', e => {
   if (tog){ catalogoEdit[+tog.dataset.i].activo = !catalogoEdit[+tog.dataset.i].activo; tog.classList.toggle('on'); return; }
   const del = e.target.closest('[data-c="del"]');
   if (del){ catalogoEdit.splice(+del.dataset.i, 1); renderCatalogo(); }
+});
+// Reemplaza el catálogo en edición con el menú oficial publicado en la página web
+document.getElementById('btn-menu-oficial').addEventListener('click', async () => {
+  const ok = await confirmar('¿Cargar menú oficial?',
+    'Se reemplazará el catálogo en pantalla con los ' + CATALOGO_INICIAL.length + ' productos y precios del menú de lacasadefridaydiego.com.mx. Después pulsa "Guardar catálogo" para aplicarlo en todos los dispositivos.');
+  if (!ok) return;
+  catalogoEdit = CATALOGO_INICIAL.map(([categoria, nombre, precio]) => ({ id: uuid(), nombre, categoria, precio: precio || 0, activo: true }));
+  renderCatalogo();
+  toast('Menú oficial cargado — revisa y pulsa "Guardar catálogo"', 'exito');
 });
 document.getElementById('btn-add-platillo').addEventListener('click', () => {
   catalogoEdit.push({ id: uuid(), nombre:'', categoria:'Plato fuerte', precio:0, activo:true });
@@ -2638,7 +2730,7 @@ const LIBERANDO_SEG = 8;      // segundos de "limpieza" antes de quedar libre
 function getMesas(){
   let m = DB.get('frida_mesas', null);
   if (!Array.isArray(m) || m.length !== NUM_MESAS){
-    m = Array.from({ length: NUM_MESAS }, (_, i) => ({ n: i+1, estado: 'libre', desde: null, ts: 0 }));
+    m = Array.from({ length: NUM_MESAS }, (_, i) => ({ n: i+1, estado: 'libre', desde: null, ts: 0, mesero: '', personas: 0, items: [], total: 0 }));
     DB.set('frida_mesas', m);
   }
   return m;
@@ -2652,7 +2744,7 @@ function transcurrido(desde){
   return hh > 0 ? hh + 'h ' + String(mm % 60).padStart(2,'0') + 'm'
                 : String(mm).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
 }
-// Pinta el salón con estado, tiempo y acciones de cada mesa
+// Pinta el salón: estado, mesero, personas y la comanda en vivo de cada mesa
 function renderMesas(){
   const cont = document.getElementById('grid-mesas');
   if (!cont) return;
@@ -2664,35 +2756,113 @@ function renderMesas(){
     if (m.estado === 'libre')     acciones = '<button data-n="' + m.n + '" data-a="ocupar">Sentar clientes</button>';
     if (m.estado === 'ocupada')   acciones = '<button data-n="' + m.n + '" data-a="comanda">📝 Comanda</button><button data-n="' + m.n + '" data-a="liberar">Liberar</button>';
     if (m.estado === 'liberando') acciones = '<button data-n="' + m.n + '" data-a="listo">✓ Lista</button>';
+    let extra = '';
+    if (m.estado === 'ocupada'){
+      extra += '<div class="mesa-meta">👤 ' + esc(m.mesero || '—') + ' · 👥 ' + (m.personas || '—') + '</div>';
+      const items = m.items || [];
+      if (items.length){
+        extra += '<ul class="mesa-items">' + items.map(it =>
+          '<li><span>' + it.cantidad + '× ' + esc(it.nombre) + '</span><span>' + money((it.cantidad || 0) * (it.precioUnit || 0)) + '</span></li>'
+        ).join('') + '</ul>' +
+        '<div class="mesa-total">' + money(m.total || 0) + '</div>';
+      } else {
+        extra += '<div class="mesa-meta" style="color:#a4968a; font-weight:500">sin artículos aún</div>';
+      }
+    }
     return '<div class="mesa ' + m.estado + '" data-n="' + m.n + '">' +
       '<div class="icono">' + icono + '</div>' +
       '<div class="nombre">Mesa ' + m.n + '</div>' +
       '<div class="estado">' + etiqueta + '</div>' +
       '<div class="tiempo" data-t="' + m.n + '">' + transcurrido(m.desde) + '</div>' +
+      extra +
       '<div class="acciones">' + acciones + '</div></div>';
   }).join('');
   const libres = mesas.filter(x => x.estado === 'libre').length;
   const res = document.getElementById('mesas-resumen');
   if (res) res.textContent = libres + ' de ' + NUM_MESAS + ' libres';
 }
+let mesaActiva = null;   // mesa vinculada a la comanda en edición
 // Ejecuta una acción sobre una mesa (ocupar, comanda, liberar, listo)
-function accionMesa(n, a){
+async function accionMesa(n, a){
   const mesas = getMesas();
   const m = mesas.find(x => x.n === n); if (!m) return;
-  if (a === 'ocupar'){ m.estado = 'ocupada'; m.desde = Date.now(); }
-  if (a === 'liberar'){ m.estado = 'liberando'; m.desde = Date.now(); }
-  if (a === 'listo'){ m.estado = 'libre'; m.desde = null; }
-  if (a !== 'comanda') m.ts = Date.now();
+  if (a === 'ocupar'){ pedirPersonas(n); return; }
   if (a === 'comanda'){
-    setMesas(mesas);
+    // Vincula la comanda a la mesa: carga lo capturado y lo comparte en vivo
+    mesaActiva = n;
+    comandaItems = (m.items || []).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit }));
     irA('comanda');
+    renderItems();
     const notas = document.getElementById('c-notas');
     if (!notas.value.includes('Mesa ' + n)) notas.value = 'Mesa ' + n + (notas.value ? ' · ' + notas.value : '');
+    actualizarBannerMesa();
     return;
   }
+  if (a === 'liberar' && (m.items || []).length){
+    const ok = await confirmar('Mesa ' + n + ' tiene comanda abierta',
+      'Se perderían ' + m.items.length + ' artículo(s) capturados SIN registrar la venta. Para cobrar usa 📝 Comanda → Guardar. ¿Liberar de todas formas?');
+    if (!ok) return;
+  }
+  if (a === 'liberar'){ m.estado = 'liberando'; m.desde = Date.now(); m.items = []; m.total = 0; }
+  if (a === 'listo'){ m.estado = 'libre'; m.desde = null; m.mesero = ''; m.personas = 0; m.items = []; m.total = 0; }
+  m.ts = Date.now();
+  if (mesaActiva === n) desvincularMesa();
   setMesas(mesas);
   renderMesas();
   empujarMesa(m);          // comparte el cambio con los demás dispositivos al instante
+}
+// Pregunta cuántas personas y ocupa la mesa con el mesero actual
+function pedirPersonas(n){
+  const fondo = document.getElementById('modal-fondo');
+  const input = document.getElementById('modal-input');
+  document.getElementById('modal-titulo').textContent = '🍽 Mesa ' + n;
+  document.getElementById('modal-texto').textContent = '¿Cuántas personas se sientan?';
+  input.style.display = 'block'; input.type = 'number'; input.min = '1'; input.value = '2'; input.placeholder = 'Número de personas';
+  fondo.classList.add('visible');
+  setTimeout(() => { input.focus(); input.select(); }, 80);
+  _modalResolve = ok => {
+    fondo.classList.remove('visible'); _modalResolve = null;
+    const personas = Math.max(1, parseInt(input.value) || 1);
+    input.type = 'text';
+    if (!ok) return;
+    const mesas = getMesas();
+    const m = mesas.find(x => x.n === n); if (!m) return;
+    m.estado = 'ocupada'; m.desde = Date.now(); m.ts = Date.now();
+    m.mesero = (usuarioActual && (usuarioActual.nombre || usuarioActual.user)) || '';
+    m.personas = personas; m.items = []; m.total = 0;
+    setMesas(mesas); renderMesas(); empujarMesa(m);
+  };
+}
+// Banner que indica a qué mesa está vinculada la comanda
+function actualizarBannerMesa(){
+  const b = document.getElementById('comanda-mesa-banner');
+  if (!b) return;
+  if (mesaActiva == null){ b.style.display = 'none'; return; }
+  const m = getMesas().find(x => x.n === mesaActiva);
+  document.getElementById('cmb-mesa').textContent = 'Mesa ' + mesaActiva;
+  document.getElementById('cmb-info').textContent = m
+    ? ' · 👤 ' + (m.mesero || '—') + ' · 👥 ' + (m.personas || '—') + ' personas · los artículos se comparten en vivo'
+    : '';
+  b.style.display = 'flex';
+}
+function desvincularMesa(){ mesaActiva = null; actualizarBannerMesa(); }
+document.getElementById('cmb-soltar').addEventListener('click', desvincularMesa);
+// Comparte en vivo (con pausa breve) los artículos de la comanda vinculada
+let _mesaPushTimer = null;
+function sincronizarMesaComanda(){
+  if (mesaActiva == null) return;
+  clearTimeout(_mesaPushTimer);
+  _mesaPushTimer = setTimeout(() => {
+    const mesas = getMesas();
+    const m = mesas.find(x => x.n === mesaActiva);
+    if (!m || m.estado !== 'ocupada') return;
+    m.items = comandaItems.filter(it => it.nombre).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit }));
+    m.total = +comandaItems.reduce((s, it) => s + (it.cantidad || 0) * (it.precioUnit || 0), 0).toFixed(2);
+    m.ts = Date.now();
+    setMesas(mesas);
+    if (vistaActual === 'mesas') renderMesas();
+    empujarMesa(m);
+  }, 600);
 }
 // Reloj del salón: actualiza tiempos y concluye la limpieza automáticamente
 function tickMesas(){
@@ -2702,7 +2872,7 @@ function tickMesas(){
   const cambiadas = [];
   mesas.forEach(m => {
     if (m.estado === 'liberando' && Date.now() - m.desde > LIBERANDO_SEG * 1000){
-      m.estado = 'libre'; m.desde = null; m.ts = Date.now(); cambio = true; cambiadas.push(m);
+      m.estado = 'libre'; m.desde = null; m.mesero = ''; m.personas = 0; m.items = []; m.total = 0; m.ts = Date.now(); cambio = true; cambiadas.push(m);
     }
   });
   if (cambio){ setMesas(mesas); renderMesas(); cambiadas.forEach(empujarMesa); return; }
@@ -2731,6 +2901,10 @@ function fusionarMesas(remotas){
       m.estado = r.estado || 'libre';
       m.desde = r.desde ? Number(r.desde) : null;
       m.ts = Number(r.ts) || 0;
+      m.mesero = r.mesero || '';
+      m.personas = Number(r.personas) || 0;
+      m.items = Array.isArray(r.items) ? r.items : [];
+      m.total = Number(r.total) || 0;
       cambio = true;
     }
   });
@@ -2776,7 +2950,7 @@ function empujarConfig(){
 // Siembra el catálogo inicial y la configuración la primera vez que se abre
 function sembrarDatos(){
   if (!localStorage.getItem(LS.platillos)){
-    DB.set(LS.platillos, CATALOGO_INICIAL.map(([categoria, nombre]) => ({ id: uuid(), nombre, categoria, precio: 0, activo: true })));
+    DB.set(LS.platillos, CATALOGO_INICIAL.map(([categoria, nombre, precio]) => ({ id: uuid(), nombre, categoria, precio: precio || 0, activo: true })));
   }
   if (!localStorage.getItem(LS.config)) DB.set(LS.config, configDefault());
 }
