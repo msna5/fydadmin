@@ -297,6 +297,13 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 .acciones-form{ display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
 .campo{ margin-bottom:14px; }
 
+#mn-aviso:not(:empty){
+  display:flex; align-items:flex-start; gap:10px; background:#FFF3D6; color:var(--alerta);
+  border:1px solid #EDD9A3; border-radius:var(--radio); padding:var(--e2);
+  font-size:13.5px; margin-bottom:var(--e2); line-height:1.5;
+}
+#mn-aviso b{ color:var(--alerta); }
+
 /* Celdas de la comanda bloqueadas para el personal operativo */
 .celda-fija{ color:var(--texto); font-weight:500; padding:10px; }
 .celda-fija.mono{ color:var(--azul); }
@@ -822,6 +829,7 @@ tr.prod-inactivo{ opacity:.5; }
             <button class="btn btn-azul btn-sm" id="mn-guardar">Guardar menú</button>
             <span id="mn-msg"></span>
           </div>
+          <div id="mn-aviso"></div>
           <div class="menu-chips" id="mn-cats"></div>
           <div class="menu-chips" id="mn-subs"></div>
           <div class="menu-info" id="mn-info"></div>
@@ -3410,6 +3418,7 @@ let menuEdit = null;            // copia de trabajo del menú
 let mnSubtab = 'productos';
 let mnCat = '', mnSub = '', mnBuscar = '';
 let mnSinGuardar = false;
+let mnPrecargado = false;       // el menú base se mostró pero aún no se ha guardado
 let mpEditandoId = null;        // producto abierto en el modal
 
 // Carga la copia de trabajo desde el menú guardado
@@ -3428,6 +3437,12 @@ function tocarMenu(){
 // Punto de entrada de la vista Menú
 function renderMenu(){
   if (!menuEdit) cargarMenuEdit();
+  // Primera vez: muestra el menú base ya armado para no partir de una pantalla vacía.
+  // Solo vive en memoria; nada se guarda ni se comparte hasta pulsar "Guardar menú".
+  if (!menuEdit.productos.length && !menuEdit.grupos.length){
+    menuEdit = construirMenuSemilla();
+    mnPrecargado = true;
+  }
   document.getElementById('menu-productos').style.display = mnSubtab === 'productos' ? '' : 'none';
   document.getElementById('menu-grupos').style.display    = mnSubtab === 'grupos' ? '' : 'none';
   if (mnSubtab === 'productos') renderMenuProductos(); else renderMenuGrupos();
@@ -3456,6 +3471,12 @@ function renderMenuProductos(){
     (b.popularidad || 0) - (a.popularidad || 0) ||   // los más vendidos primero
     a.nombre.localeCompare(b.nombre));
 
+  const avisoEl = document.getElementById('mn-aviso');
+  if (avisoEl) avisoEl.innerHTML = mnPrecargado
+    ? '<span>📖</span><span><b>Menú base precargado y listo para revisar.</b> Son ' + menuEdit.productos.length +
+      ' productos con los precios que ya cobras, ordenados por lo que más se vende. ' +
+      'Todavía no está guardado: revísalo, ajusta lo que haga falta y pulsa <b>Guardar menú</b> para activarlo en todos los dispositivos.</span>'
+    : '';
   const total = menuEdit.productos.length;
   const activos = menuEdit.productos.filter(p => p.activo).length;
   const pend = menuEdit.productos.filter(p => p.pendiente).length;
@@ -3609,6 +3630,9 @@ function guardarMenu(){
   if (vacios.length){ toast('Hay ' + vacios.length + ' producto(s) sin nombre', 'alerta'); return; }
   setMenu(menuEdit);
   mnSinGuardar = false;
+  mnPrecargado = false;
+  const av = document.getElementById('mn-aviso');
+  if (av) av.innerHTML = '';
   ['mn-msg','mg-msg'].forEach(id => {
     const e = document.getElementById(id);
     if (e){ e.className = 'msg-ok'; e.textContent = '✓ Menú guardado'; setTimeout(() => { e.textContent = ''; e.className = ''; }, 3000); }
@@ -3645,8 +3669,9 @@ document.getElementById('mn-semilla').addEventListener('click', async () => {
     ' grupos de opciones tomados del documento del restaurante, sin precios y con sus pendientes de validación marcados. Después pulsa “Guardar menú”.');
   if (!ok) return;
   menuEdit = construirMenuSemilla();
+  mnPrecargado = true;
   tocarMenu(); renderMenu();
-  toast('Menú base cargado — revisa, pon precios y guarda', 'exito');
+  toast('Menú base recargado — revisa y guarda', 'exito');
 });
 // Acciones sobre la tabla de productos
 document.getElementById('mn-tabla').addEventListener('click', async e => {
