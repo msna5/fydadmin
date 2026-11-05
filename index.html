@@ -38,8 +38,11 @@
   --azul-clar:   #EBEAF4;   /* tinte claro de indigo para fondos suaves */
   --texto:       #2E2C38;   /* texto principal */
   --texto-suave: #6E6B78;   /* texto secundario / muted */
-  --rosa:        #F5F4F1;   /* compat: antiguo rosa -> blanco calido */
-  --rosa-osc:    #30277D;   /* compat: antiguo rosa oscuro -> indigo */
+  /* Acento rosa: aporta contraste frente al azul dominante.
+     Fuera de la pantalla de inicio, que se mantiene solo en azul. */
+  --rosa:        #F2D7D9;   /* rosa suave: rellenos y separadores */
+  --rosa-osc:    #C4888A;   /* rosa tierra: bordes, series de graficas */
+  --rosa-txt:    #8C4A50;   /* rosa profundo: texto sobre blanco (contraste AA) */
   --crema:       #F5F4F1;   /* compat */
   --cafe:        #2E2C38;   /* compat */
   /* ---- Escala de espacios (seccion 5): 8 / 16 / 24 / 32 ---- */
@@ -99,8 +102,8 @@ label{ display:block; font-size:13px; font-weight:600; color:var(--gris-osc); ma
 .btn-azul{ background:var(--azul); color:var(--blanco); }
 .btn-azul:hover{ background:var(--indigo); }
 /* Boton secundario: fondo blanco, borde y texto azul (manual) */
-.btn-rosa{ background:var(--blanco); color:var(--azul); border:1px solid var(--azul); }
-.btn-rosa:hover{ background:var(--azul-clar); }
+.btn-rosa{ background:var(--blanco); color:var(--rosa-txt); border:1px solid var(--rosa-osc); }
+.btn-rosa:hover{ background:var(--rosa); color:var(--rosa-txt); }
 .btn-outline{ background:var(--blanco); color:var(--azul); border:1px solid var(--azul); }
 .btn-outline:hover{ background:var(--azul-clar); }
 .btn-peligro{ background:var(--peligro); color:var(--blanco); }
@@ -114,7 +117,7 @@ label{ display:block; font-size:13px; font-weight:600; color:var(--gris-osc); ma
   padding:var(--e3); border:1px solid var(--gris-claro);
 }
 .card h3{ font-size:20px; margin-bottom:var(--e2); display:flex; align-items:center; gap:var(--e1); }
-.card h3::after{ content:''; flex:1; height:1px; background:var(--gris-claro); }
+.card h3::after{ content:''; flex:1; height:2px; background:var(--rosa); border-radius:2px; }
 
 /* ============================================================
    SECCIÓN 3 · LOGIN
@@ -126,9 +129,9 @@ label{ display:block; font-size:13px; font-weight:600; color:var(--gris-osc); ma
 }
 /* Talavera en franjas laterales, nunca detras de textos ni controles (manual) */
 #pantalla-login::before, #pantalla-login::after{
-  content:''; position:absolute; top:0; bottom:0; width:104px;
+  content:''; position:absolute; top:0; bottom:0; width:48px;
   background-image:var(--talavera-tile); background-size:48px 48px;
-  opacity:.26; pointer-events:none;
+  opacity:.3; pointer-events:none;
 }
 #pantalla-login::before{ left:0; border-right:3px solid var(--azul); }
 #pantalla-login::after{ right:0; border-left:3px solid var(--azul); }
@@ -231,6 +234,7 @@ main{ max-width:1180px; margin:0 auto; padding:var(--e4) var(--e3) 60px; padding
 .kpi.rojo{ border-left-color:var(--peligro);} .kpi.rojo .valor{ color:var(--peligro); }
 .kpi.amarillo{ border-left-color:var(--alerta);} .kpi.amarillo .valor{ color:var(--alerta); }
 .kpi.naranja{ border-left-color:var(--alerta);} .kpi.naranja .valor{ color:var(--alerta); }
+.kpi.rosa{ border-left-color:var(--rosa-osc);} .kpi.rosa .valor{ color:var(--rosa-txt); }
 
 /* Semáforo */
 #semaforo{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; margin-bottom:22px; }
@@ -256,7 +260,7 @@ tbody tr:nth-child(even){ background:#FAFAFC; }
 tbody tr:hover{ background:var(--azul-clar); }
 td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 .barra-prog{ background:var(--azul-clar); border-radius:6px; height:8px; overflow:hidden; min-width:70px; }
-.barra-prog > div{ height:100%; background:var(--azul); border-radius:6px; }
+.barra-prog > div{ height:100%; background:var(--rosa-osc); border-radius:6px; }
 .tabla-scroll{ overflow-x:auto; }
 .vacio-msg{ text-align:center; color:#9A97A3; padding:26px 10px !important; font-style:italic; }
 
@@ -272,8 +276,8 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 }
 #lista-platillos .opcion{ padding:9px 14px; cursor:pointer; display:flex; justify-content:space-between; gap:10px; font-size:14px; }
 #lista-platillos .opcion:hover, #lista-platillos .opcion.marcada{ background:var(--azul-clar); }
-#lista-platillos .opcion .cat{ font-size:11.5px; color:var(--indigo); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
-#lista-platillos .grupo{ padding:7px 14px 3px; font-size:11px; font-weight:700; color:var(--indigo); text-transform:uppercase; letter-spacing:.09em; background:var(--blanco-cal); }
+#lista-platillos .opcion .cat{ font-size:11.5px; color:var(--rosa-txt); font-weight:600; text-transform:uppercase; letter-spacing:.05em; }
+#lista-platillos .grupo{ padding:7px 14px 3px; font-size:11px; font-weight:700; color:var(--rosa-txt); text-transform:uppercase; letter-spacing:.09em; background:var(--rosa); }
 #tabla-items input{ padding:7px 9px; font-size:13.5px; }
 #tabla-items .qty{ display:flex; align-items:center; gap:4px; }
 #tabla-items .qty button{
@@ -300,11 +304,11 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 .egresos-grid .ancho{ grid-column:1 / -1; }
 .atajos{ display:flex; gap:9px; flex-wrap:wrap; margin-top:16px; }
 .atajo{
-  border:1px solid var(--azul); background:var(--blanco); color:var(--azul);
+  border:1px solid var(--rosa-osc); background:var(--blanco); color:var(--rosa-txt);
   border-radius:20px; padding:9px 16px; font-size:13.5px; font-weight:600; min-height:40px;
   transition:background .15s, color .15s;
 }
-.atajo:hover, .atajo.activo{ background:var(--azul); color:var(--blanco); }
+.atajo:hover, .atajo.activo{ background:var(--rosa-osc); color:var(--blanco); border-color:var(--rosa-osc); }
 /* Toggle factura */
 .toggle{ display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
 .toggle .pista{ width:46px; height:25px; border-radius:20px; background:#E4E3E2; position:relative; transition:background .2s; flex-shrink:0; }
@@ -428,9 +432,9 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
 .mesa .tiempo{ font-family:var(--f-mono); font-size:12px; color:#6E6B78; min-height:17px; margin-top:2px; }
 .mesa.libre{ border-color:rgba(27,94,59,.30); cursor:pointer; }
 .mesa.libre .estado{ color:var(--exito); }
-.mesa.ocupada{ border-color:var(--indigo); background:var(--blanco); animation:latido 2.2s ease-in-out infinite; }
-.mesa.ocupada .estado{ color:var(--rosa-osc); }
-@keyframes latido{ 0%,100%{ box-shadow:var(--sombra);} 50%{ box-shadow:0 0 0 6px rgba(48,39,125,.12);} }
+.mesa.ocupada{ border-color:var(--rosa-osc); background:var(--blanco); animation:latido 2.2s ease-in-out infinite; }
+.mesa.ocupada .estado{ color:var(--rosa-txt); }
+@keyframes latido{ 0%,100%{ box-shadow:var(--sombra);} 50%{ box-shadow:0 0 0 6px rgba(196,136,138,.26);} }
 .mesa.liberando{ border-color:var(--alerta); }
 .mesa.liberando .estado{ color:var(--alerta); }
 .mesa.liberando::after{
@@ -478,7 +482,7 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
   .nav-tab{ width:100%; justify-content:flex-start; padding:12px 14px; font-size:15px; }
   .nav-usuario{ display:none; }
   main{ padding:86px var(--e2) 50px; }
-  #pantalla-login::before, #pantalla-login::after{ width:34px; background-size:34px 34px; }
+  #pantalla-login::before, #pantalla-login::after{ width:32px; background-size:32px 32px; }
   #kpis{ grid-template-columns:1fr 1fr; gap:10px; }
   .kpi .valor{ font-size:19px; }
   .egresos-grid{ grid-template-columns:1fr; }
@@ -1591,7 +1595,7 @@ document.getElementById('banner-config-link').addEventListener('click', () => ir
    ============================================================ */
 let periodoActual = 'semana';
 const charts = {};   // registro de instancias Chart.js para destruirlas al refrescar
-const PALETA = ['#0C1148','#30277D','#5B52A3','#8A83C4','#45434D','#1B5E3B','#7A3B00','#B9B4DE'];
+const PALETA = ['#0C1148','#C4888A','#30277D','#E0B5B7','#5B52A3','#8C4A50','#45434D','#F2D7D9'];
 
 // Devuelve {desde, hasta} en ISO según el período seleccionado
 function rangoPeriodo(p){
@@ -1636,7 +1640,7 @@ function renderKPIs(m){
     ['Egresos',             money(m.gastos),            'rojo',   m.egresos.length + ' registros'],
     ['Saldo neto',          money(m.saldo),             m.saldo >= 0 ? 'verde' : 'rojo', 'ingresos − egresos'],
     ['Margen',              m.ingresos ? m.margen.toFixed(1) + '%' : '—', colorMargen, 'meta: ' + cfg.metaMargen + '%'],
-    ['Ticket promedio',     m.comandas ? money(m.ticket) : '—', 'azul', cfg.metaTicket ? 'meta: ' + money(cfg.metaTicket) : 'sin meta definida'],
+    ['Ticket promedio',     m.comandas ? money(m.ticket) : '—', 'rosa', cfg.metaTicket ? 'meta: ' + money(cfg.metaTicket) : 'sin meta definida'],
     ['Comandas',            String(m.comandas),         'azul',   'en el período'],
     ['Días operados',       String(m.dias),             'azul',   'con ventas registradas'],
     ['Egreso promedio/día', m.dias ? money(m.egresosDia) : '—', 'naranja', 'egresos / días operados']
@@ -1747,7 +1751,7 @@ function renderGraficas(){
       labels: fechas.map(f => fechaBonita(f).slice(0,5) + ' ' + nombreDia(f).slice(0,3)),
       datasets: [
         { label:'Ingresos', data: fechas.map(f => porDia[f].i), backgroundColor:'#0C1148', borderRadius:4 },
-        { label:'Egresos',  data: fechas.map(f => porDia[f].e), backgroundColor:'#30277D', borderRadius:4 }
+        { label:'Egresos',  data: fechas.map(f => porDia[f].e), backgroundColor:'#C4888A', borderRadius:4 }
       ]
     },
     options: chartBase({ scales: { y: ejeMoneda, x: ejeTexto } })
@@ -1779,7 +1783,7 @@ function renderGraficas(){
   const cats = Object.entries(porCat).sort((a,b) => b[1]-a[1]).slice(0,8);
   crearChart('ch-egresos', {
     type: 'bar',
-    data: { labels: cats.map(c => c[0]), datasets: [{ data: cats.map(c => c[1]), backgroundColor:'#30277D', borderRadius:4 }] },
+    data: { labels: cats.map(c => c[0]), datasets: [{ data: cats.map(c => c[1]), backgroundColor:'#C4888A', borderRadius:4 }] },
     options: chartBase({ indexAxis:'y', plugins:{ legend:{ display:false }, tooltip: chartBase().plugins.tooltip }, scales: { x: ejeMoneda, y: ejeTexto } })
   }, !cats.length);
 
@@ -1794,8 +1798,8 @@ function renderGraficas(){
       labels: sems.map(s => 'Sem ' + s),
       datasets: [{
         label:'Saldo neto', data: sems.map(s => porSem[s].i - porSem[s].e),
-        borderColor:'#0C1148', backgroundColor:'rgba(48,39,125,.12)', fill:true,
-        tension:.3, pointBackgroundColor:'#30277D', pointRadius:4
+        borderColor:'#0C1148', backgroundColor:'rgba(196,136,138,.20)', fill:true,
+        tension:.3, pointBackgroundColor:'#C4888A', pointRadius:4
       }]
     },
     options: chartBase({ scales: { y: ejeMoneda, x: ejeTexto } })
