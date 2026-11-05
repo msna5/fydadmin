@@ -304,6 +304,37 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 }
 #mn-aviso b{ color:var(--alerta); }
 
+/* Selección de opciones del producto */
+#op-caja{
+  background:var(--blanco); border-radius:var(--radio); padding:var(--e4); max-width:560px; width:100%;
+  max-height:88vh; overflow-y:auto; border:1px solid var(--gris-claro);
+  box-shadow:0 12px 40px rgba(12,17,72,.22); animation:entrada .25s ease both;
+}
+#op-caja h3{ margin-bottom:2px; }
+#op-sub{ font-size:13.5px; color:var(--gris-osc); margin-bottom:var(--e3); }
+.op-grupo{ margin-bottom:var(--e3); }
+.op-grupo .etq{
+  display:block; font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--gris-osc); margin-bottom:var(--e1);
+}
+.op-grupo .etq .req{ color:var(--peligro); }
+.op-grupo .etq .falta{ color:var(--peligro); font-weight:600; text-transform:none; letter-spacing:0; margin-left:6px; }
+.op-chips{ display:flex; flex-wrap:wrap; gap:7px; }
+.op-chip{
+  border:1px solid var(--gris-claro); background:var(--blanco); color:var(--texto);
+  border-radius:var(--radio-btn); padding:10px 14px; font-size:14px; font-weight:500;
+  min-height:42px; transition:background .15s, border-color .15s, color .15s;
+}
+.op-chip:hover{ border-color:var(--azul); color:var(--azul); }
+.op-chip.on{ background:var(--azul); color:var(--blanco); border-color:var(--azul); font-weight:600; }
+.op-chip .extra{ font-family:var(--f-mono); font-size:12px; opacity:.8; margin-left:5px; }
+.op-total{
+  display:flex; justify-content:space-between; align-items:baseline;
+  background:var(--azul-clar); border-radius:var(--radio); padding:var(--e2) var(--e3); margin:var(--e3) 0 var(--e2);
+  font-size:14px; color:var(--azul); font-weight:600;
+}
+.op-total .cifra{ font-family:var(--f-mono); font-size:24px; font-weight:500; }
+
 /* Celdas de la comanda bloqueadas para el personal operativo */
 .celda-fija{ color:var(--texto); font-weight:500; padding:10px; }
 .celda-fija.mono{ color:var(--azul); }
@@ -1169,6 +1200,20 @@ tr.prod-inactivo{ opacity:.5; }
 
 <!-- Toasts y modal -->
 <div id="toasts"></div>
+<!-- Selección de opciones al agregar un producto a la comanda -->
+<div id="op-fondo" class="modal-fondo-base">
+  <div id="op-caja">
+    <h3 id="op-titulo">Producto</h3>
+    <p id="op-sub"></p>
+    <div id="op-grupos"></div>
+    <div class="op-total"><span>Precio del artículo</span><span class="cifra" id="op-total">$0.00</span></div>
+    <div class="acciones-form">
+      <button class="btn btn-outline btn-sm" id="op-cancelar">Cancelar</button>
+      <button class="btn btn-azul btn-sm" id="op-ok">Agregar a la comanda</button>
+    </div>
+  </div>
+</div>
+
 <!-- Editor de producto del menú -->
 <div id="mp-fondo" class="modal-fondo-base">
   <div id="mp-caja">
@@ -2300,32 +2345,125 @@ const inputBuscar = document.getElementById('c-buscar');
 const listaEl = document.getElementById('lista-platillos');
 let idxMarcado = -1;
 
-// Filtra el catálogo activo por texto y pinta el dropdown agrupado por categoría
+// Catálogo vigente: el menú estructurado si ya existe, si no el catálogo plano anterior
+function catalogoActivo(){
+  const m = getMenu();
+  if (m.productos && m.productos.length){
+    return { fuente: 'menu', productos: m.productos, grupos: m.grupos || [] };
+  }
+  return { fuente: 'plano', productos: getPlatillos(), grupos: [] };
+}
+// Filtra el catálogo activo por texto y pinta el dropdown agrupado
 function renderListaPlatillos(){
   const q = inputBuscar.value.trim().toLowerCase();
-  const activos = getPlatillos().filter(p => p.activo);
+  const cat = catalogoActivo();
+  const activos = cat.productos.filter(p => p.activo);
   const filtrados = q ? activos.filter(p => p.nombre.toLowerCase().includes(q)) : activos;
   idxMarcado = -1;
   if (!filtrados.length){
-    listaEl.innerHTML = '<div class="opcion" style="color:#9A97A3">Sin coincidencias — usa "+ Agregar artículo"</div>';
+    listaEl.innerHTML = '<div class="opcion" style="color:#9A97A3">Sin coincidencias en el menú</div>';
   } else {
-    let html = '', catPrev = '';
+    let html = '', grpPrev = '';
     filtrados.slice(0, 40).forEach(p => {
-      if (p.categoria !== catPrev){ html += '<div class="grupo">' + esc(p.categoria) + '</div>'; catPrev = p.categoria; }
-      html += '<div class="opcion" data-id="' + p.id + '"><span>' + esc(p.nombre) + '</span><span class="mono">' + (p.precio > 0 ? money(p.precio) : 's/precio') + '</span></div>';
+      const grupo = p.subcategoria || p.categoria || '';
+      if (grupo !== grpPrev){ html += '<div class="grupo">' + esc(grupo) + '</div>'; grpPrev = grupo; }
+      const nOp = (p.grupos || []).length;
+      html += '<div class="opcion" data-id="' + p.id + '"><span>' + esc(p.nombre) +
+        (nOp ? ' <span class="cat">' + nOp + ' opc.</span>' : '') + '</span>' +
+        '<span class="mono">' + (p.precio > 0 ? money(p.precio) : 's/precio') + '</span></div>';
     });
     listaEl.innerHTML = html;
   }
   listaEl.style.display = 'block';
 }
-// Selecciona un platillo del dropdown y lo agrega a la comanda
+// Al elegir del dropdown: si el producto tiene opciones, se piden antes de agregarlo
 function elegirPlatillo(id){
-  const p = getPlatillos().find(x => x.id === id);
-  if (p){ agregarItem(p.nombre, p.precio); toastSuave(p.nombre); }
-  inputBuscar.value = ''; listaEl.style.display = 'none'; inputBuscar.focus();
+  const cat = catalogoActivo();
+  const p = cat.productos.find(x => x.id === id);
+  inputBuscar.value = ''; listaEl.style.display = 'none';
+  if (!p) return;
+  const grupos = (p.grupos || [])
+    .map(gid => cat.grupos.find(g => g.id === gid))
+    .filter(g => g && (g.opciones || []).some(o => o.activo));
+  if (!grupos.length){ agregarItem(p.nombre, p.precio || 0); inputBuscar.focus(); return; }
+  abrirOpciones(p, grupos);
 }
-// Mini feedback al agregar (sin saturar de toasts)
-function toastSuave(n){ /* opcional: feedback silencioso; la fila nueva ya es visible */ }
+
+/* ---------- Selección de opciones del producto ---------- */
+let opProducto = null, opGrupos = [], opElegido = {};
+// Abre el selector de opciones con los grupos que aplican al producto
+function abrirOpciones(p, grupos){
+  opProducto = p; opGrupos = grupos; opElegido = {};
+  // Preselecciona la primera opción de los grupos opcionales con valor neutro
+  grupos.forEach(g => {
+    if (!g.obligatorio){
+      const neutra = (g.opciones || []).find(o => o.activo && /^sin (mención|especificar)/i.test(o.nombre));
+      if (neutra) opElegido[g.id] = neutra.id;
+    }
+  });
+  document.getElementById('op-titulo').textContent = p.nombre;
+  document.getElementById('op-sub').textContent =
+    (p.subcategoria ? p.subcategoria + ' · ' : '') + 'base ' + money(p.precio || 0);
+  pintarOpciones();
+  document.getElementById('op-fondo').classList.add('visible');
+}
+// Dibuja los grupos con sus opciones y el precio acumulado
+function pintarOpciones(mostrarFaltantes){
+  document.getElementById('op-grupos').innerHTML = opGrupos.map(g => {
+    const falta = mostrarFaltantes && g.obligatorio && !opElegido[g.id];
+    return '<div class="op-grupo"><span class="etq">' + esc(g.nombre) +
+      (g.obligatorio ? ' <span class="req">*</span>' : '') +
+      (falta ? '<span class="falta">elige una opción</span>' : '') + '</span><div class="op-chips">' +
+      (g.opciones || []).filter(o => o.activo).map(o =>
+        '<button type="button" class="op-chip' + (opElegido[g.id] === o.id ? ' on' : '') +
+        '" data-g="' + esc(g.id) + '" data-o="' + o.id + '">' + esc(o.nombre) +
+        (o.precioExtra ? '<span class="extra">+' + money(o.precioExtra).replace('$','$') + '</span>' : '') +
+        '</button>').join('') + '</div></div>';
+  }).join('');
+  document.getElementById('op-total').textContent = money(precioOpciones());
+}
+// Precio = base del producto + extras de las opciones elegidas
+function precioOpciones(){
+  let t = opProducto ? (opProducto.precio || 0) : 0;
+  opGrupos.forEach(g => {
+    const o = (g.opciones || []).find(x => x.id === opElegido[g.id]);
+    if (o) t += (o.precioExtra || 0);
+  });
+  return +t.toFixed(2);
+}
+// Nombre del artículo: producto + opciones elegidas que aportan información
+function nombreOpciones(){
+  const partes = [opProducto.nombre];
+  opGrupos.forEach(g => {
+    const o = (g.opciones || []).find(x => x.id === opElegido[g.id]);
+    if (o && !/^sin (mención|especificar)/i.test(o.nombre)) partes.push(o.nombre);
+  });
+  return partes.join(' · ');
+}
+function cerrarOpciones(){
+  document.getElementById('op-fondo').classList.remove('visible');
+  opProducto = null; opGrupos = []; opElegido = {};
+}
+document.getElementById('op-grupos').addEventListener('click', e => {
+  const b = e.target.closest('.op-chip'); if (!b) return;
+  const g = b.dataset.g;
+  opElegido[g] = opElegido[g] === b.dataset.o ? null : b.dataset.o;   // volver a tocar la deselecciona
+  pintarOpciones();
+});
+document.getElementById('op-ok').addEventListener('click', () => {
+  // Las opciones obligatorias deben elegirse (regla del documento del menú)
+  const faltan = opGrupos.filter(g => g.obligatorio && !opElegido[g.id]);
+  if (faltan.length){
+    pintarOpciones(true);
+    toast('Falta elegir: ' + faltan.map(g => g.nombre).join(', '), 'alerta');
+    return;
+  }
+  agregarItem(nombreOpciones(), precioOpciones());
+  cerrarOpciones();
+  inputBuscar.focus();
+});
+document.getElementById('op-cancelar').addEventListener('click', cerrarOpciones);
+document.getElementById('op-fondo').addEventListener('click', e => { if (e.target.id === 'op-fondo') cerrarOpciones(); });
 inputBuscar.addEventListener('input', renderListaPlatillos);
 inputBuscar.addEventListener('focus', renderListaPlatillos);
 inputBuscar.addEventListener('keydown', e => {
@@ -3666,7 +3804,8 @@ document.getElementById('mg-guardar').addEventListener('click', guardarMenu);
 document.getElementById('mn-semilla').addEventListener('click', async () => {
   const ok = await confirmar('¿Cargar el menú base?',
     'Se reemplazará la copia en pantalla con ' + PRODUCTOS_SEMILLA.length + ' productos y ' + GRUPOS_SEMILLA.length +
-    ' grupos de opciones tomados del documento del restaurante, sin precios y con sus pendientes de validación marcados. Después pulsa “Guardar menú”.');
+    ' grupos de opciones, con los precios que cobras hoy según tu histórico de ventas, ordenados por lo que más se vende ' +
+    'y con los pendientes de validación marcados. Después pulsa “Guardar menú”.');
   if (!ok) return;
   menuEdit = construirMenuSemilla();
   mnPrecargado = true;
