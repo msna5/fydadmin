@@ -304,6 +304,23 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 }
 #mn-aviso b{ color:var(--alerta); }
 
+/* Formulario financiero genérico */
+#ff-caja{
+  background:var(--blanco); border-radius:var(--radio); padding:var(--e4); max-width:520px; width:100%;
+  max-height:90vh; overflow-y:auto; border:1px solid var(--gris-claro);
+  box-shadow:0 12px 40px rgba(12,17,72,.22); animation:entrada .25s ease both;
+}
+#ff-caja h3{ margin-bottom:2px; }
+#ff-sub{ font-size:13.5px; color:var(--gris-osc); margin-bottom:var(--e3); }
+.barra-uso{ background:var(--gris-claro); border-radius:6px; height:9px; overflow:hidden; min-width:70px; }
+.barra-uso > div{ height:100%; border-radius:6px; background:var(--exito); }
+.barra-uso > div.medio{ background:var(--alerta); }
+.barra-uso > div.alto{ background:var(--peligro); }
+.mov-lista{ margin-top:var(--e3); border-top:1px solid var(--gris-claro); padding-top:var(--e2); }
+.mov-fila{ display:flex; justify-content:space-between; gap:10px; font-size:13.5px; padding:7px 0; border-bottom:1px solid #EFEEEF; }
+.mov-fila .cargo{ color:var(--peligro); font-family:var(--f-mono); }
+.mov-fila .abono{ color:var(--exito); font-family:var(--f-mono); }
+
 /* Panel de captura por recuadros */
 #panel-caja{
   background:var(--blanco-cal); border-radius:var(--radio); width:100%; max-width:860px;
@@ -617,6 +634,64 @@ tr.prod-inactivo{ opacity:.5; }
 .grupos-check .g-meta{ margin-left:auto; font-size:11.5px; color:var(--gris-osc); }
 
 /* ============================================================
+   NAVEGACIÓN AGRUPADA
+   ============================================================ */
+.nav-grupo{ position:relative; }
+.nav-grupo-btn::after{ content:'▾'; font-size:10px; opacity:.6; margin-left:4px; }
+.nav-menu{
+  display:none; position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%);
+  background:var(--blanco); border-radius:var(--radio); box-shadow:0 10px 32px rgba(12,17,72,.22);
+  padding:6px; min-width:200px; z-index:120; border:1px solid var(--gris-claro);
+}
+.nav-grupo.abierto .nav-menu{ display:block; animation:aparecer .16s ease both; }
+.nav-menu button{
+  display:flex; align-items:center; gap:9px; width:100%; text-align:left; border:none;
+  background:transparent; color:var(--texto); padding:10px 13px; border-radius:var(--radio-btn);
+  font-size:14.5px; font-weight:500; white-space:nowrap; min-height:42px;
+}
+.nav-menu button:hover{ background:var(--azul-clar); color:var(--azul); }
+.nav-menu button.activa{ background:var(--azul); color:var(--blanco); font-weight:600; }
+.nav-grupo-titulo{ display:none; }
+
+/* ============================================================
+   MÓDULOS FINANCIEROS
+   ============================================================ */
+.fin-nota{
+  display:flex; gap:10px; align-items:flex-start; background:var(--azul-clar);
+  border-radius:var(--radio); padding:var(--e2); font-size:13.5px; color:var(--azul);
+  margin-bottom:var(--e3); line-height:1.5;
+}
+.fin-nota.aviso{ background:#FFF3D6; color:var(--alerta); border:1px solid #EDD9A3; }
+.pyg{ font-size:15px; }
+.pyg .linea{ display:flex; justify-content:space-between; align-items:baseline; padding:10px 0; border-bottom:1px solid var(--gris-claro); }
+.pyg .linea:last-child{ border-bottom:none; }
+.pyg .linea span:last-child{ font-family:var(--f-mono); font-weight:500; }
+.pyg .linea.resta span:last-child{ color:var(--peligro); }
+.pyg .linea.sub{ padding-left:var(--e2); font-size:13.5px; color:var(--gris-osc); border-bottom:1px dashed var(--gris-claro); }
+.pyg .linea.total{
+  border-top:2px solid var(--azul); border-bottom:none; margin-top:var(--e1);
+  padding-top:var(--e2); font-weight:700; color:var(--azul); font-size:17px;
+}
+.pyg .linea.total span:last-child{ font-size:21px; }
+.pct{ font-family:var(--f-mono); font-size:12.5px; color:var(--texto-suave); margin-left:8px; }
+.barra-pareto{ background:var(--azul-clar); border-radius:6px; height:10px; overflow:hidden; min-width:60px; }
+.barra-pareto > div{ height:100%; background:var(--azul); border-radius:6px; }
+.equilibrio{
+  background:var(--blanco); border:1px solid var(--gris-claro); border-left:4px solid var(--azul);
+  border-radius:var(--radio); padding:var(--e3); text-align:center;
+}
+.equilibrio .cifra{ font-family:var(--f-mono); font-size:30px; color:var(--azul); font-weight:500; display:block; margin:var(--e1) 0; }
+.equilibrio .det{ font-size:13.5px; color:var(--gris-osc); }
+.tipo-chip{
+  border:1px solid var(--gris-claro); background:var(--blanco); border-radius:20px;
+  padding:4px 12px; font-size:12px; font-weight:600; cursor:pointer; color:var(--gris-osc);
+}
+.tipo-chip.fijo{ border-color:var(--indigo); color:var(--indigo); }
+.tipo-chip.variable{ border-color:var(--rosa-osc); color:var(--rosa-txt); }
+.fila-vence{ color:var(--peligro); font-weight:600; }
+.fila-pronto{ color:var(--alerta); font-weight:600; }
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 980px){
@@ -635,6 +710,18 @@ tr.prod-inactivo{ opacity:.5; }
   }
   #nav-tabs.abierto{ display:flex; }
   .nav-tab{ width:100%; justify-content:flex-start; padding:12px 14px; font-size:15px; }
+  /* En móvil los grupos se abren como secciones, sin menú flotante */
+  .nav-grupo{ width:100%; }
+  .nav-grupo-btn{ display:none !important; }
+  .nav-menu{
+    display:block !important; position:static; transform:none; background:transparent;
+    box-shadow:none; border:none; padding:0; min-width:0;
+  }
+  .nav-menu button{ padding:12px 14px 12px 26px; }
+  .nav-grupo-titulo{
+    display:block; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--texto-suave); font-weight:700; padding:14px 14px 4px;
+  }
   .nav-usuario{ display:none; }
   main{ padding:86px var(--e2) 50px; }
   .form-grid{ grid-template-columns:1fr; }
@@ -986,7 +1073,17 @@ tr.prod-inactivo{ opacity:.5; }
               <option>Tarjeta crédito</option>
               <option>Transferencia SPEI</option>
               <option>Mercado Pago / CoDi</option>
+              <option>Crédito (por pagar)</option>
             </select>
+          </div>
+          <div class="campo" id="campo-vence" style="display:none">
+            <label for="e-vence">¿Cuándo vence el pago?</label>
+            <input type="date" id="e-vence">
+          </div>
+          <div class="campo">
+            <label for="e-fuente">¿Con qué se pagó?</label>
+            <select id="e-fuente"></select>
+            <span id="e-fuente-saldo" style="font-size:12px; color:var(--gris-osc)"></span>
           </div>
           <div class="campo">
             <label>¿Tiene factura?</label>
@@ -1036,6 +1133,163 @@ tr.prod-inactivo{ opacity:.5; }
           <button class="atajo" data-cat="Personal / Sueldos">👥 Personal</button>
           <button class="atajo" data-cat="Desechables / Empaques">📦 Desechables</button>
         </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         FINANZAS · rentabilidad del menú y del negocio
+         ============================================================ -->
+    <section class="vista" id="vista-finanzas">
+      <h2 class="vista-titulo">Finanzas</h2>
+      <p class="vista-sub">Qué deja cada producto, qué necesitas vender y cómo está financiado el negocio</p>
+      <div class="subtabs" id="fin-subtabs">
+        <button data-ft="rentabilidad" class="activo">Rentabilidad</button>
+        <button data-ft="financiamiento">Financiamiento</button>
+      </div>
+      <div id="fin-rentabilidad">
+      <div class="selector-periodo" id="fin-periodo">
+        <button data-periodo="semana">Esta semana</button>
+        <button data-periodo="mes" class="activo">Este mes</button>
+        <button data-periodo="todo">Todo</button>
+      </div>
+      <div id="fin-aviso"></div>
+      <div id="fin-kpis" style="margin-bottom:var(--e3)"></div>
+      <div class="grid-2" style="margin-bottom:var(--e3)">
+        <div class="card">
+          <h3>Estado de resultados</h3>
+          <div class="pyg" id="fin-pyg"></div>
+        </div>
+        <div class="card">
+          <h3>Punto de equilibrio</h3>
+          <div id="fin-equilibrio"></div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:var(--e3)">
+        <h3>Control de costo de insumos</h3>
+        <p class="vista-sub" style="margin-bottom:var(--e2)">Lo que <i>debieron</i> costar los platillos vendidos, contra lo que realmente compraste</p>
+        <div id="fin-foodcost"></div>
+      </div>
+      <div class="card" style="margin-bottom:var(--e3)">
+        <h3>Rentabilidad por producto</h3>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr>
+              <th>Producto</th><th class="num">Uds.</th><th class="num">Ingreso</th>
+              <th class="num">Costo</th><th class="num">Utilidad</th><th class="num">Margen</th>
+            </tr></thead>
+            <tbody id="fin-productos"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Concentración del menú</h3>
+        <p class="vista-sub" style="margin-bottom:var(--e2)">Qué tan dependiente eres de unos pocos productos</p>
+        <div id="fin-pareto"></div>
+      </div>
+      </div><!-- /fin-rentabilidad -->
+
+      <!-- ---------- Financiamiento ---------- -->
+      <div id="fin-financiamiento" style="display:none">
+        <div id="fif-kpis" style="margin-bottom:var(--e3)"></div>
+
+        <div class="card" style="margin-bottom:var(--e3)">
+          <h3>Líneas de crédito</h3>
+          <p class="vista-sub" style="margin-bottom:var(--e2)">Cada gasto que registres con una línea como fuente se carga aquí automáticamente</p>
+          <div class="menu-barra">
+            <button class="btn btn-outline btn-sm" id="fif-nueva-linea">+ Línea de crédito</button>
+            <button class="btn btn-rosa btn-sm" id="fif-nuevo-abono">+ Registrar pago a una línea</button>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr>
+                <th>Línea</th><th>Tipo</th><th class="num">Límite</th><th class="num">Usado</th>
+                <th class="num">Disponible</th><th>Uso</th><th>Próximo pago</th><th style="width:90px"></th>
+              </tr></thead>
+              <tbody id="fif-lineas"></tbody>
+            </table>
+          </div>
+          <div id="fif-detalle"></div>
+        </div>
+
+        <div class="card">
+          <h3>Inversionistas y socios</h3>
+          <p class="vista-sub" style="margin-bottom:var(--e2)">Capital aportado al negocio y lo que se les ha pagado</p>
+          <div class="menu-barra">
+            <button class="btn btn-outline btn-sm" id="fif-nuevo-inv">+ Inversionista</button>
+            <button class="btn btn-rosa btn-sm" id="fif-nuevo-pago">+ Registrar pago a inversionista</button>
+          </div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th class="num">Aportación</th><th class="num">Participación</th>
+                <th class="num">Pagado</th><th class="num">Pendiente de recuperar</th><th style="width:90px"></th>
+              </tr></thead>
+              <tbody id="fif-inversionistas"></tbody>
+            </table>
+          </div>
+          <div id="fif-pagos"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         CONTABILIDAD · estructura de gastos y flujo
+         ============================================================ -->
+    <section class="vista" id="vista-contabilidad">
+      <h2 class="vista-titulo">Contabilidad</h2>
+      <p class="vista-sub">Gastos fijos y variables, flujo de efectivo y cuentas por pagar</p>
+      <div class="fin-nota">💡 <span>Los gastos <b>fijos</b> se pagan vendas o no (renta, sueldos, servicios). Los <b>variables</b> suben y bajan con las ventas (insumos, bebidas, desechables). Separarlos es lo que permite calcular el punto de equilibrio.</span></div>
+      <div class="card" style="margin-bottom:var(--e3)">
+        <h3>Clasificación de categorías</h3>
+        <p class="vista-sub" style="margin-bottom:var(--e2)">Toca una categoría para cambiarla de fijo a variable</p>
+        <div id="cont-tipos" class="menu-chips"></div>
+      </div>
+      <div class="card" style="margin-bottom:var(--e3)">
+        <h3>Flujo de efectivo por mes</h3>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Mes</th><th class="num">Ingresos</th><th class="num">Gastos fijos</th><th class="num">Gastos variables</th><th class="num">Flujo neto</th></tr></thead>
+            <tbody id="cont-flujo"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Cuentas por pagar</h3>
+        <p class="vista-sub" style="margin-bottom:var(--e2)">Compras registradas con forma de pago “Crédito (por pagar)”</p>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Fecha</th><th>Proveedor</th><th>Categoría</th><th class="num">Monto</th><th>Vence</th><th>Acción</th></tr></thead>
+            <tbody id="cont-pagar"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================
+         FISCAL · facturación e IVA
+         ============================================================ -->
+    <section class="vista" id="vista-fiscal">
+      <h2 class="vista-titulo">Fiscal</h2>
+      <p class="vista-sub">Control de facturas e información lista para tu contador</p>
+      <div class="selector-periodo" id="fis-periodo">
+        <button data-periodo="mes" class="activo">Este mes</button>
+        <button data-periodo="todo">Todo</button>
+      </div>
+      <div class="fin-nota aviso">⚠ <span>El sistema <b>no emite facturas CFDI</b>: eso requiere un proveedor autorizado por el SAT. Lo que hace es llevar el control de lo facturado y preparar la información para quien te factura o te lleva la contabilidad.</span></div>
+      <div id="fis-kpis" style="margin-bottom:var(--e3)"></div>
+      <div class="card" style="margin-bottom:var(--e3)">
+        <h3>Facturación por categoría de gasto</h3>
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Categoría</th><th class="num">Con factura</th><th class="num">Sin factura</th><th class="num">% facturado</th><th class="num">IVA estimado</th></tr></thead>
+            <tbody id="fis-categorias"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Reporte para el contador</h3>
+        <p class="vista-sub" style="margin-bottom:var(--e2)">Excel con ingresos, egresos clasificados y el detalle de lo facturado del período elegido</p>
+        <button class="btn btn-azul" id="fis-exportar">⬇ Descargar reporte contable</button>
       </div>
     </section>
 
@@ -1274,6 +1528,19 @@ tr.prod-inactivo{ opacity:.5; }
 
 <!-- Toasts y modal -->
 <div id="toasts"></div>
+<!-- Formulario financiero genérico -->
+<div id="ff-fondo" class="modal-fondo-base">
+  <div id="ff-caja">
+    <h3 id="ff-titulo"></h3>
+    <p id="ff-sub"></p>
+    <div id="ff-campos"></div>
+    <div class="acciones-form">
+      <button class="btn btn-outline btn-sm" id="ff-cancelar">Cancelar</button>
+      <button class="btn btn-azul btn-sm" id="ff-ok">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Panel de captura por recuadros -->
 <div id="panel-fondo" class="modal-fondo-base">
   <div id="panel-caja">
@@ -1366,7 +1633,8 @@ const LS = {
   platillos:  'frida_platillos',
   config:     'frida_config',
   pendientes: 'frida_pendientes',
-  menu:       'frida_menu'
+  menu:       'frida_menu',
+  finanzas:   'frida_finanzas'
 };
 
 // Menú oficial con precios (extraído de lacasadefridaydiego.com.mx/#menu)
@@ -1593,6 +1861,75 @@ function claseMargen(m){
   return 'margen-mal';
 }
 
+/* Gastos fijos: se pagan se venda o no. Variables: acompañan a la venta.
+   La separación es lo que hace posible calcular el punto de equilibrio.
+   El administrador puede reclasificar cualquier categoría desde Contabilidad. */
+const TIPO_GASTO_DEFECTO = {
+  'Insumos / Mercado':'variable', 'Carnes y pollo':'variable', 'Bebidas / Refrescos':'variable',
+  'Gas LP':'variable', 'Desechables / Empaques':'variable',
+  'Personal / Sueldos':'fijo', 'Renta':'fijo', 'Luz / Agua / Servicios':'fijo',
+  'Equipo y utensilios':'fijo', 'Mantenimiento':'fijo', 'Publicidad':'fijo', 'Otros':'variable'
+};
+// Tipo de una categoría, respetando lo que el administrador haya configurado
+function tipoGasto(categoria){
+  const cfg = getConfig().tiposGasto || {};
+  return cfg[categoria] || TIPO_GASTO_DEFECTO[categoria] || 'variable';
+}
+
+/* ============================================================
+   FINANCIAMIENTO · líneas de crédito e inversionistas
+   Una línea de crédito se carga con los egresos pagados desde ella
+   y se abona con los pagos que el negocio le hace.
+   ============================================================ */
+const TIPOS_LINEA = ['Tarjeta de crédito','Préstamo bancario','Crédito de proveedor','Préstamo personal','Otro'];
+const CONCEPTOS_INV = ['Reparto de utilidades','Retiro de capital','Pago de préstamo','Intereses','Otro'];
+
+function getFinanzas(){
+  const f = DB.get(LS.finanzas, null);
+  if (f && Array.isArray(f.lineas)) return f;
+  return { lineas: [], abonos: [], inversionistas: [], pagosInv: [], ts: 0 };
+}
+// Guarda y comparte el financiamiento con los demás dispositivos del administrador
+function setFinanzas(f){
+  f.ts = Date.now();
+  DB.set(LS.finanzas, f);
+  if (fbListo) fdb.collection('estado').doc('finanzas').set(f).catch(() => {});
+}
+// Saldo de una línea: lo gastado con ella menos lo que se le ha abonado
+function saldoLinea(id){
+  const f = getFinanzas();
+  const linea = f.lineas.find(l => l.id === id) || {};
+  const cargos = getEgresos().filter(e => e.fuente === id).reduce((s,e) => s + e.monto, 0);
+  const abonos = f.abonos.filter(a => a.lineaId === id).reduce((s,a) => s + a.monto, 0);
+  const saldo = +(cargos - abonos).toFixed(2);
+  const limite = +(linea.limite || 0);
+  return { cargos, abonos, saldo, limite, disponible: +(limite - saldo).toFixed(2),
+           uso: limite ? Math.min(saldo / limite * 100, 999) : 0 };
+}
+// Próxima fecha de pago a partir del día del mes configurado
+function proximoPagoLinea(linea){
+  const dia = parseInt(linea.diaPago);
+  if (!dia || dia < 1 || dia > 31) return null;
+  const hoy = new Date();
+  let f = new Date(hoy.getFullYear(), hoy.getMonth(), dia);
+  if (f < hoy) f = new Date(hoy.getFullYear(), hoy.getMonth() + 1, dia);
+  return f.getFullYear() + '-' + String(f.getMonth()+1).padStart(2,'0') + '-' + String(f.getDate()).padStart(2,'0');
+}
+// Aportado y pagado de un inversionista
+function balanceInversionista(id){
+  const f = getFinanzas();
+  const inv = f.inversionistas.find(i => i.id === id) || {};
+  const pagado = f.pagosInv.filter(p => p.invId === id).reduce((s,p) => s + p.monto, 0);
+  return { aportacion: +(inv.aportacion || 0), pagado: +pagado.toFixed(2) };
+}
+// Nombre legible de la fuente con la que se pagó un egreso
+function nombreFuente(fuente){
+  if (!fuente || fuente === 'caja') return 'Efectivo de caja';
+  if (fuente === 'banco') return 'Cuenta bancaria';
+  const l = getFinanzas().lineas.find(x => x.id === fuente);
+  return l ? l.nombre : 'Línea dada de baja';
+}
+
 const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const CATEGORIAS_PLATILLO = ['Plato fuerte','Antojito','Bebida','Postre','Extra'];
 const fmtMXN = new Intl.NumberFormat('es-MX', { style:'currency', currency:'MXN', minimumFractionDigits:2 });
@@ -1715,6 +2052,13 @@ function escucharNube(){
   fdb.collection('egresos').where('fecha', '>=', corte)
     .onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), e => console.warn('egresos:', e && e.code));
   cargarHistoricoUnaVez();
+  fdb.collection('estado').doc('finanzas').onSnapshot(d => {
+    const rf = d.data();
+    if (rf && Array.isArray(rf.lineas) && Number(rf.ts || 0) > (Number(getFinanzas().ts) || 0)){
+      DB.set(LS.finanzas, rf);
+      if (vistaActual === 'finanzas') renderFinanzas();
+    }
+  }, () => {});
   fdb.collection('estado').doc('config').onSnapshot(d => {
     const rc = d.data();
     if (rc && Number(rc.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
@@ -2103,42 +2447,97 @@ document.getElementById('btn-salir').addEventListener('click', cerrarSesion);
 /* ============================================================
    SECCIÓN 4 · NAVEGACIÓN POR ROLES
    ============================================================ */
-const TABS = {
+/* Navegación: el administrador maneja 12 vistas, demasiadas en una sola fila,
+   así que se agrupan por tema. El personal operativo conserva sus dos pestañas. */
+const NAV = {
   admin: [
-    ['dashboard','📊','Dashboard'], ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'], ['menu','📖','Menú'],
-    ['egresos','💸','Egresos'], ['historial','📋','Historial'], ['exportar','⬇','Exportar'],
-    ['config','⚙','Config'], ['ia','🤖','IA']
+    { tipo:'item',  id:'dashboard', icono:'📊', texto:'Panel' },
+    { tipo:'grupo', icono:'🍽', texto:'Operación', items:[
+      ['mesas','Mesas'], ['comanda','Comanda'], ['menu','Menú']] },
+    { tipo:'grupo', icono:'💰', texto:'Administración', items:[
+      ['egresos','Egresos'], ['finanzas','Finanzas'], ['contabilidad','Contabilidad'], ['fiscal','Fiscal']] },
+    { tipo:'grupo', icono:'📋', texto:'Registros', items:[
+      ['historial','Historial'], ['exportar','Exportar']] },
+    { tipo:'grupo', icono:'⚙', texto:'Más', items:[
+      ['config','Configuración'], ['ia','Asistente']] }
   ],
-  mesero: [ ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'] ]
+  mesero: [
+    { tipo:'item', id:'mesas',   icono:'🍽', texto:'Mesas' },
+    { tipo:'item', id:'comanda', icono:'📝', texto:'Comanda' }
+  ]
 };
+// Vistas permitidas por rol, para la guardia de seguridad de irA()
+const VISTAS_MESERO = ['mesas','comanda'];
 let vistaActual = 'dashboard';
 
 // Construye las pestañas de navegación según el rol del usuario
 function construirNav(){
   const cont = document.getElementById('nav-tabs');
   cont.innerHTML = '';
-  (TABS[usuarioActual.rol] || TABS.mesero).forEach(([id, icono, texto]) => {
-    const b = document.createElement('button');
-    b.className = 'nav-tab'; b.dataset.vista = id;
-    b.innerHTML = '<span>' + icono + '</span> ' + texto;
-    b.addEventListener('click', () => { irA(id); cont.classList.remove('abierto'); });
-    cont.appendChild(b);
+  (NAV[usuarioActual.rol] || NAV.mesero).forEach(entrada => {
+    if (entrada.tipo === 'item'){
+      const b = document.createElement('button');
+      b.className = 'nav-tab'; b.dataset.vista = entrada.id;
+      b.innerHTML = '<span>' + entrada.icono + '</span> ' + entrada.texto;
+      cont.appendChild(b);
+      return;
+    }
+    const g = document.createElement('div');
+    g.className = 'nav-grupo';
+    g.innerHTML =
+      '<button class="nav-tab nav-grupo-btn"><span>' + entrada.icono + '</span> ' + entrada.texto + '</button>' +
+      '<span class="nav-grupo-titulo">' + entrada.texto + '</span>' +
+      '<div class="nav-menu">' + entrada.items.map(([id, txt]) =>
+        '<button data-vista="' + id + '">' + txt + '</button>').join('') + '</div>';
+    cont.appendChild(g);
   });
   document.getElementById('nav-usuario').textContent = usuarioActual.nombre;
+  marcarNavActiva();
 }
+// Resalta la vista en curso, también dentro de su grupo
+function marcarNavActiva(){
+  document.querySelectorAll('#nav-tabs [data-vista]').forEach(b =>
+    b.classList.toggle('activa', b.dataset.vista === vistaActual));
+  document.querySelectorAll('.nav-grupo').forEach(g =>
+    g.querySelector('.nav-grupo-btn').classList.toggle('activa',
+      !!g.querySelector('[data-vista].activa')));
+}
+// Un solo manejador para toda la navegación
+document.getElementById('nav-tabs').addEventListener('click', e => {
+  const grupo = e.target.closest('.nav-grupo-btn');
+  if (grupo){
+    const g = grupo.parentElement, abierto = g.classList.contains('abierto');
+    document.querySelectorAll('.nav-grupo').forEach(x => x.classList.remove('abierto'));
+    g.classList.toggle('abierto', !abierto);
+    return;
+  }
+  const b = e.target.closest('[data-vista]');
+  if (b){
+    irA(b.dataset.vista);
+    document.querySelectorAll('.nav-grupo').forEach(x => x.classList.remove('abierto'));
+    document.getElementById('nav-tabs').classList.remove('abierto');
+  }
+});
+// Cerrar los menús al tocar fuera
+document.addEventListener('click', e => {
+  if (!e.target.closest('.nav-grupo')) document.querySelectorAll('.nav-grupo').forEach(x => x.classList.remove('abierto'));
+});
 // Cambia la vista activa y refresca su contenido
 function irA(id){
   // Seguridad por rol: el mesero solo puede ver el salón de mesas y la comanda
-  if (usuarioActual && usuarioActual.rol === 'mesero' && id !== 'mesas' && id !== 'comanda') id = 'mesas';
+  if (usuarioActual && usuarioActual.rol === 'mesero' && !VISTAS_MESERO.includes(id)) id = 'mesas';
   vistaActual = id;
   document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
   document.getElementById('vista-' + id).classList.add('activa');
-  document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('activa', t.dataset.vista === id));
+  marcarNavActiva();
   if (id === 'mesas'){ renderMesas(); pullMesas(); }
   if (id === 'menu')      renderMenu();
   if (id === 'dashboard') renderDashboard();
   if (id === 'historial') renderHistorial();
   if (id === 'exportar')  renderResumenExport();
+  if (id === 'finanzas'){ if (finSubtab === 'financiamiento') renderFinanciamiento(); else renderFinanzas(); }
+  if (id === 'contabilidad') renderContabilidad();
+  if (id === 'fiscal')       renderFiscal();
   if (id === 'config')    renderConfig();
   window.scrollTo({ top:0 });
 }
@@ -2478,9 +2877,10 @@ document.getElementById('items-body').addEventListener('click', e => {
   renderItems();
   sincronizarMesaComanda();
 });
-// Agrega una fila (desde catálogo o en blanco)
-function agregarItem(nombre, precio){
-  comandaItems.push({ nombre: nombre || '', cantidad: 1, precioUnit: precio || 0 });
+// Agrega una fila (desde catálogo o en blanco). El costo viaja con el artículo
+// para que la rentabilidad no dependa de reconstruirlo después.
+function agregarItem(nombre, precio, costo){
+  comandaItems.push({ nombre: nombre || '', cantidad: 1, precioUnit: precio || 0, costoUnit: +(costo || 0) });
   renderItems();
   sincronizarMesaComanda();
 }
@@ -2534,7 +2934,7 @@ function elegirPlatillo(id){
   const grupos = (p.grupos || [])
     .map(gid => cat.grupos.find(g => g.id === gid))
     .filter(g => g && (g.opciones || []).some(o => o.activo));
-  if (!grupos.length){ agregarItem(p.nombre, p.precio || 0); inputBuscar.focus(); return; }
+  if (!grupos.length){ agregarItem(p.nombre, p.precio || 0, p.costo || 0); inputBuscar.focus(); return; }
   abrirOpciones(p, grupos);
 }
 
@@ -2582,6 +2982,15 @@ function precioOpciones(){
   });
   return +t.toFixed(2);
 }
+// Costo de producción del artículo armado, con la misma lógica
+function costoOpciones(){
+  let t = opProducto ? (opProducto.costo || 0) : 0;
+  opGrupos.forEach(g => {
+    const o = (g.opciones || []).find(x => x.id === opElegido[g.id]);
+    if (o) t += (o.costoExtra || 0);
+  });
+  return +t.toFixed(2);
+}
 // Nombre del artículo: producto + opciones elegidas que aportan información
 function nombreOpciones(){
   const partes = [opProducto.nombre];
@@ -2609,7 +3018,7 @@ document.getElementById('op-ok').addEventListener('click', () => {
     toast('Falta elegir: ' + faltan.map(g => g.nombre).join(', '), 'alerta');
     return;
   }
-  agregarItem(nombreOpciones(), precioOpciones());
+  agregarItem(nombreOpciones(), precioOpciones(), costoOpciones());
   cerrarOpciones();
   inputBuscar.focus();
 });
@@ -2744,7 +3153,7 @@ function elegirDesdePanel(id){
     .map(gid => cat.grupos.find(g => g.id === gid))
     .filter(g => g && (g.opciones || []).some(o => o.activo));
   if (!grupos.length){
-    agregarItem(p.nombre, p.precio || 0);
+    agregarItem(p.nombre, p.precio || 0, p.costo || 0);
     toast('✓ ' + p.nombre + ' · ' + money(p.precio || 0), 'exito');
     actualizarResumenPanel();
     return;
@@ -2774,7 +3183,7 @@ document.getElementById('panel-cuerpo').addEventListener('click', e => {
       toast('Falta elegir: ' + faltan.map(g => g.nombre).join(', '), 'alerta');
       return;
     }
-    agregarItem(nombreOpciones(), precioOpciones());
+    agregarItem(nombreOpciones(), precioOpciones(), costoOpciones());
     toast('✓ ' + nombreOpciones() + ' · ' + money(precioOpciones()), 'exito');
     opProducto = null; opGrupos = []; opElegido = {};
     pnNivel = 'productos'; renderPanel();   // vuelve a la lista para seguir capturando
@@ -2827,7 +3236,8 @@ function limpiarComanda(){
 // Valida, construye el objeto venta, guarda local y sincroniza en segundo plano
 function guardarComanda(){
   const items = comandaItems
-    .map(it => ({ nombre: it.nombre.trim(), cantidad: it.cantidad, precioUnit: it.precioUnit, subtotal: +(it.cantidad * it.precioUnit).toFixed(2) }))
+    .map(it => ({ nombre: it.nombre.trim(), cantidad: it.cantidad, precioUnit: it.precioUnit,
+                  costoUnit: +(it.costoUnit || 0), subtotal: +(it.cantidad * it.precioUnit).toFixed(2) }))
     .filter(it => it.nombre && it.cantidad > 0 && it.precioUnit > 0);
   if (!items.length){ toast('Agrega al menos un artículo con nombre, cantidad y precio válidos', 'alerta'); return; }
   const fecha = document.getElementById('c-fecha').value || hoyISO();
@@ -2952,6 +3362,9 @@ function limpiarEgreso(){
   document.getElementById('e-concepto').value = '';
   document.getElementById('e-monto').value = '';
   document.getElementById('e-pago').selectedIndex = 0;
+  llenarFuentes();
+  document.getElementById('e-vence').value = '';
+  document.getElementById('campo-vence').style.display = 'none';
   document.getElementById('e-notas').value = '';
   setFactura(false);
   egresoItems = [];
@@ -2992,10 +3405,16 @@ function guardarEgreso(){
     monto: +monto.toFixed(2),
     pago: document.getElementById('e-pago').value,
     factura: togFactura.classList.contains('on'),
+    fuente: document.getElementById('e-fuente').value || 'caja',
     notas: document.getElementById('e-notas').value.trim(),
     sincronizado: false,
     ts: Date.now()
   };
+  // Compra a crédito: queda pendiente de pago con su vencimiento
+  if (egreso.pago === 'Crédito (por pagar)'){
+    egreso.pagado = false;
+    egreso.vence = document.getElementById('e-vence').value || '';
+  }
   const egresos = getEgresos(); egresos.push(egreso); DB.set(LS.egresos, egresos);
   sincronizarRegistro('egreso', egreso);
   toast('✓ Egreso guardado · ' + money(egreso.monto), 'exito');
@@ -3003,6 +3422,11 @@ function guardarEgreso(){
 }
 document.getElementById('btn-guardar-egreso').addEventListener('click', guardarEgreso);
 document.getElementById('btn-limpiar-egreso').addEventListener('click', limpiarEgreso);
+// La fecha de vencimiento solo aparece en compras a crédito
+document.getElementById('e-pago').addEventListener('change', e => {
+  document.getElementById('campo-vence').style.display =
+    e.target.value === 'Crédito (por pagar)' ? '' : 'none';
+});
 // Atajos rápidos: preseleccionan la categoría en el select
 document.getElementById('atajos-egreso').addEventListener('click', e => {
   const b = e.target.closest('.atajo'); if (!b) return;
@@ -3823,7 +4247,7 @@ async function accionMesa(n, a){
   if (a === 'comanda'){
     // Vincula la comanda a la mesa: carga lo capturado y lo comparte en vivo
     mesaActiva = n;
-    comandaItems = (m.items || []).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit }));
+    comandaItems = (m.items || []).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit, costoUnit: +(it.costoUnit || 0) }));
     irA('comanda');
     renderItems();
     const notas = document.getElementById('c-notas');
@@ -3889,7 +4313,7 @@ function sincronizarMesaComanda(){
     const mesas = getMesas();
     const m = mesas.find(x => x.n === mesaActiva);
     if (!m || m.estado !== 'ocupada') return;
-    m.items = comandaItems.filter(it => it.nombre).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit }));
+    m.items = comandaItems.filter(it => it.nombre).map(it => ({ nombre: it.nombre, cantidad: it.cantidad, precioUnit: it.precioUnit, costoUnit: +(it.costoUnit || 0) }));
     m.total = +comandaItems.reduce((s, it) => s + (it.cantidad || 0) * (it.precioUnit || 0), 0).toFixed(2);
     m.ts = Date.now();
     setMesas(mesas);
@@ -4347,6 +4771,612 @@ document.getElementById('mg-lista').addEventListener('change', e => {
     menuEdit.grupos.find(g => g.id === e.target.dataset.gt).tipo = e.target.value;
     tocarMenu(); renderMenuGrupos();
   }
+});
+
+
+/* ============================================================
+   MÓDULOS FINANCIEROS · Finanzas · Contabilidad · Fiscal
+   ============================================================ */
+let finPeriodo = 'mes', fisPeriodo = 'mes';
+const IVA = 0.16;
+
+// Normaliza texto para emparejar nombres capturados con el menú
+function sinAcentos(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+// Localiza a qué producto del menú corresponde un artículo vendido.
+// Los nuevos vienen como "Quesadilla · Suadero · Con queso"; los históricos,
+// con el nombre libre que capturó el mesero.
+function productoDeItem(nombre){
+  const menu = getMenu().productos || [];
+  if (!menu.length) return null;
+  const base = sinAcentos(String(nombre).split('·')[0]);
+  let p = menu.find(x => sinAcentos(x.nombre) === base);
+  if (p) return p;
+  const n = sinAcentos(nombre);
+  // Coincidencia por prefijo: el nombre más largo que calce gana
+  const cands = menu.filter(x => n.indexOf(sinAcentos(x.nombre)) === 0);
+  if (cands.length) return cands.sort((a,b) => b.nombre.length - a.nombre.length)[0];
+  return null;
+}
+// Costo de un artículo vendido: el que se guardó al capturar, o el del menú
+function costoDeItem(it){
+  if (it.costoUnit > 0) return it.costoUnit;
+  const p = productoDeItem(it.nombre);
+  return p && p.costo > 0 ? p.costo : 0;
+}
+
+/* ---------- FINANZAS ---------- */
+// Agrupa las ventas del período por producto, con ingreso, costo y utilidad
+function rentabilidadProductos(m){
+  const acc = {};
+  m.ventas.forEach(v => (v.items || []).forEach(it => {
+    const p = productoDeItem(it.nombre);
+    const clave = p ? p.nombre : String(it.nombre).split('·')[0].trim();
+    const a = acc[clave] || (acc[clave] = { nombre: clave, uds:0, ingreso:0, costo:0, conCosto:0 });
+    const cu = costoDeItem(it);
+    a.uds += it.cantidad;
+    a.ingreso += it.subtotal;
+    a.costo += cu * it.cantidad;
+    if (cu > 0) a.conCosto += it.cantidad;
+  }));
+  return Object.values(acc).sort((a,b) => b.ingreso - a.ingreso);
+}
+// Pinta la vista de Finanzas completa
+function renderFinanzas(){
+  const m = metricas(finPeriodo);
+  const prods = rentabilidadProductos(m);
+  const costoVentas = prods.reduce((s,p) => s + p.costo, 0);
+  const cubiertos = prods.reduce((s,p) => s + p.conCosto, 0);
+  const totalUds = prods.reduce((s,p) => s + p.uds, 0);
+  const cobertura = totalUds ? cubiertos / totalUds * 100 : 0;
+
+  // Aviso cuando faltan costos: sin ellos el análisis es parcial
+  const sinCosto = (getMenu().productos || []).filter(p => p.activo && !p.costo).length;
+  document.getElementById('fin-aviso').innerHTML = cobertura >= 99 ? '' :
+    '<div class="fin-nota aviso">⚠ <span><b>Faltan costos de producción.</b> Solo el ' + cobertura.toFixed(0) +
+    '% de lo vendido en el período tiene costo capturado' + (sinCosto ? ' y hay ' + sinCosto + ' productos activos sin costo' : '') +
+    '. Mientras tanto, la utilidad que ves está sobrestimada. Captúralos en <b>Menú → Editar producto → Costo de producción</b>.</span></div>';
+
+  // Gastos del período separados en fijos y variables
+  let fijos = 0, variables = 0;
+  m.egresos.forEach(e => { if (tipoGasto(e.categoria) === 'fijo') fijos += e.monto; else variables += e.monto; });
+  // El costo de receta y las compras de insumos son la MISMA salida de dinero
+  // vista de dos formas, así que el resultado real solo resta los gastos
+  // efectivamente registrados. El costo teórico se analiza aparte.
+  const utilBruta = m.ingresos - costoVentas;     // margen teórico del menú
+  const utilNeta = m.ingresos - fijos - variables; // resultado real del período
+  const pct = v => m.ingresos ? '<span class="pct">' + (v / m.ingresos * 100).toFixed(1) + '%</span>' : '';
+
+  document.getElementById('fin-kpis').innerHTML =
+    '<div id="kpis-fin" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">' +
+    [['Ingresos', money(m.ingresos), 'verde', m.comandas + ' comandas'],
+     ['Gastos del período', money(fijos + variables), 'rojo', money(fijos) + ' fijos · ' + money(variables) + ' variables'],
+     ['Resultado', money(utilNeta), utilNeta >= 0 ? 'verde' : 'rojo', m.ingresos ? (utilNeta/m.ingresos*100).toFixed(1) + '% sobre ventas' : '—'],
+     ['Food cost teórico', m.ingresos && costoVentas ? (costoVentas/m.ingresos*100).toFixed(1) + '%' : '—', 'rosa', 'costo de receta sobre venta']
+    ].map(([e,v,col,d]) =>
+      '<div class="kpi ' + col + '"><div class="etiqueta">' + e + '</div><div class="valor">' + v + '</div><div class="detalle">' + d + '</div></div>'
+    ).join('') + '</div>';
+
+  document.getElementById('fin-pyg').innerHTML =
+    '<div class="linea"><span>Ingresos por ventas</span><span>' + money(m.ingresos) + '</span></div>' +
+    '<div class="linea resta"><span>− Gastos variables</span><span>' + money(variables) + pct(variables) + '</span></div>' +
+    '<div class="linea sub"><span>insumos, bebidas, gas, desechables</span><span></span></div>' +
+    '<div class="linea"><span><b>= Margen de contribución</b></span><span><b>' + money(m.ingresos - variables) + '</b>' + pct(m.ingresos - variables) + '</span></div>' +
+    '<div class="linea resta"><span>− Gastos fijos</span><span>' + money(fijos) + pct(fijos) + '</span></div>' +
+    '<div class="linea sub"><span>renta, sueldos, servicios</span><span></span></div>' +
+    '<div class="linea total"><span>Resultado del período</span><span>' + money(utilNeta) + '</span></div>';
+
+  // Comparación entre el costo teórico de las recetas y la compra real
+  const cajaFC = document.getElementById('fin-foodcost');
+  if (!costoVentas){
+    cajaFC.innerHTML = '<p class="vacio-msg">Captura los costos de producción en Menú para comparar contra tus compras.</p>';
+  } else {
+    const dif = variables - costoVentas;
+    const pctDif = costoVentas ? dif / costoVentas * 100 : 0;
+    let lectura, color;
+    if (Math.abs(pctDif) <= 15){ lectura = 'Tus compras cuadran razonablemente con lo que debieron costar los platillos vendidos.'; color = 'var(--exito)'; }
+    else if (dif > 0){ lectura = 'Compraste bastante más de lo que exigían las ventas. Puede ser merma, inventario acumulado, costos del menú desactualizados o compras de otro período.'; color = 'var(--alerta)'; }
+    else { lectura = 'Compraste menos de lo que exigían las ventas: probablemente estás consumiendo inventario comprado antes, o los costos del menú están sobrestimados.'; color = 'var(--alerta)'; }
+    cajaFC.innerHTML =
+      '<div class="pyg">' +
+      '<div class="linea"><span>Costo teórico de lo vendido <span class="pct">según recetas del menú</span></span><span>' + money(costoVentas) + '</span></div>' +
+      '<div class="linea"><span>Compras reales de insumos <span class="pct">gastos variables del período</span></span><span>' + money(variables) + '</span></div>' +
+      '<div class="linea total"><span>Diferencia</span><span style="color:' + color + '">' + (dif >= 0 ? '+' : '') + money(dif) + '</span></div>' +
+      '</div><p style="font-size:13.5px; color:var(--gris-osc); margin-top:var(--e2)">' + lectura + '</p>';
+  }
+
+  // Punto de equilibrio: gastos fijos sobre el margen de contribución
+  const cajaEq = document.getElementById('fin-equilibrio');
+  // Margen de contribución: lo que deja cada peso vendido tras los costos variables
+  const margenContrib = m.ingresos ? (m.ingresos - variables) / m.ingresos : 0;
+  if (!m.ingresos){
+    cajaEq.innerHTML = '<p class="vacio-msg">Sin ventas en el período.</p>';
+  } else if (!fijos){
+    cajaEq.innerHTML = '<p class="vacio-msg">Registra tus gastos fijos (renta, sueldos, servicios) para calcular el punto de equilibrio.</p>';
+  } else if (margenContrib <= 0){
+    cajaEq.innerHTML = '<div class="fin-nota aviso">⚠ <span>Tus gastos variables (' + money(variables) +
+      ') superan tus ingresos del período (' + money(m.ingresos) + '), así que no hay margen con qué cubrir los fijos. ' +
+      'Suele pasar cuando se registra una compra grande que abastece varias semanas: prueba con un período más amplio.</span></div>';
+  } else {
+    const equilibrio = fijos / margenContrib;
+    const falta = equilibrio - m.ingresos;
+    cajaEq.innerHTML = '<div class="equilibrio">' +
+      '<span class="det">Necesitas vender</span>' +
+      '<span class="cifra">' + money(equilibrio) + '</span>' +
+      '<span class="det">para cubrir tus ' + money(fijos) + ' de gastos fijos del período<br>' +
+      'Cada peso vendido deja ' + money(margenContrib) + ' para cubrirlos</span>' +
+      '<div style="margin-top:var(--e2); font-weight:600; color:' + (falta <= 0 ? 'var(--exito)' : 'var(--alerta)') + '">' +
+      (falta <= 0 ? '✓ Ya lo superaste por ' + money(-falta) : 'Te faltan ' + money(falta)) + '</div></div>';
+  }
+
+  // Rentabilidad producto por producto
+  document.getElementById('fin-productos').innerHTML = prods.length ? prods.map(p => {
+    const util = p.ingreso - p.costo;
+    const mg = p.ingreso ? util / p.ingreso * 100 : 0;
+    const falta = p.conCosto < p.uds;
+    return '<tr><td><b>' + esc(p.nombre) + '</b>' +
+      (falta ? '<span class="badge-pend" title="Sin costo capturado">sin costo</span>' : '') + '</td>' +
+      '<td class="num">' + p.uds + '</td><td class="num">' + money(p.ingreso) + '</td>' +
+      '<td class="num">' + (p.costo ? money(p.costo) : '—') + '</td>' +
+      '<td class="num">' + (p.costo ? money(util) : '—') + '</td>' +
+      '<td class="num ' + (p.costo ? claseMargen(mg) : 'margen-na') + '">' + (p.costo ? mg.toFixed(0) + '%' : '—') + '</td></tr>';
+  }).join('') : '<tr><td colspan="6" class="vacio-msg">Sin ventas en el período</td></tr>';
+
+  // Concentración: cuántos productos hacen el 80% del ingreso
+  const cajaP = document.getElementById('fin-pareto');
+  if (!prods.length){ cajaP.innerHTML = '<p class="vacio-msg">Sin datos</p>'; }
+  else {
+    const total = prods.reduce((s,p) => s + p.ingreso, 0);
+    let acum = 0, n80 = 0;
+    prods.forEach((p,i) => { if (acum < total * 0.8){ acum += p.ingreso; n80 = i + 1; } });
+    cajaP.innerHTML =
+      '<p style="font-size:15px; margin-bottom:var(--e2)"><b>' + n80 + ' de ' + prods.length +
+      ' productos</b> (' + (n80/prods.length*100).toFixed(0) + '% del menú vendido) generan el <b>80% de tus ingresos</b>.</p>' +
+      '<div class="tabla-scroll"><table><thead><tr><th>#</th><th>Producto</th><th class="num">Ingreso</th><th class="num">% del total</th><th>Acumulado</th></tr></thead><tbody>' +
+      prods.slice(0, 12).reduce((html, p, i) => {
+        const ac = prods.slice(0, i+1).reduce((s,x) => s + x.ingreso, 0) / total * 100;
+        return html + '<tr><td class="mono">' + (i+1) + '</td><td>' + esc(p.nombre) + '</td>' +
+          '<td class="num">' + money(p.ingreso) + '</td><td class="num">' + (p.ingreso/total*100).toFixed(1) + '%</td>' +
+          '<td><div class="barra-pareto"><div style="width:' + ac.toFixed(0) + '%"></div></div></td></tr>';
+      }, '') + '</tbody></table></div>';
+  }
+}
+document.getElementById('fin-periodo').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  finPeriodo = b.dataset.periodo;
+  document.querySelectorAll('#fin-periodo button').forEach(x => x.classList.toggle('activo', x === b));
+  renderFinanzas();
+});
+
+/* ---------- CONTABILIDAD ---------- */
+function renderContabilidad(){
+  const cats = [...new Set(Object.keys(TIPO_GASTO_DEFECTO).concat(getEgresos().map(e => e.categoria)))].sort();
+  document.getElementById('cont-tipos').innerHTML = cats.map(ct => {
+    const t = tipoGasto(ct);
+    return '<button class="tipo-chip ' + t + '" data-cat="' + esc(ct) + '">' + esc(ct) + ' · ' + t + '</button>';
+  }).join('');
+
+  // Flujo mes a mes
+  const meses = {};
+  getVentas().forEach(v => { (meses[v.fecha.slice(0,7)] = meses[v.fecha.slice(0,7)] || {i:0,f:0,va:0}).i += v.total; });
+  getEgresos().forEach(e => {
+    const k = e.fecha.slice(0,7);
+    const d = meses[k] = meses[k] || {i:0,f:0,va:0};
+    if (tipoGasto(e.categoria) === 'fijo') d.f += e.monto; else d.va += e.monto;
+  });
+  const claves = Object.keys(meses).sort().reverse().slice(0, 12);
+  const MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  document.getElementById('cont-flujo').innerHTML = claves.length ? claves.map(k => {
+    const d = meses[k], neto = d.i - d.f - d.va;
+    const [a, mm] = k.split('-');
+    return '<tr><td><b>' + MES[+mm-1] + ' ' + a + '</b></td>' +
+      '<td class="num">' + money(d.i) + '</td><td class="num">' + money(d.f) + '</td>' +
+      '<td class="num">' + money(d.va) + '</td>' +
+      '<td class="num" style="color:' + (neto >= 0 ? 'var(--exito)' : 'var(--peligro)') + '; font-weight:600">' + money(neto) + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" class="vacio-msg">Sin movimientos registrados</td></tr>';
+
+  // Cuentas por pagar pendientes, las más próximas a vencer primero
+  const hoy = hoyISO();
+  const pend = getEgresos().filter(e => e.pago === 'Crédito (por pagar)' && !e.pagado)
+    .sort((a,b) => (a.vence || '9999').localeCompare(b.vence || '9999'));
+  document.getElementById('cont-pagar').innerHTML = pend.length ? pend.map(e => {
+    const vencido = e.vence && e.vence < hoy;
+    const pronto = e.vence && !vencido && e.vence <= new Date(Date.now() + 7*86400000).toISOString().slice(0,10);
+    return '<tr><td class="mono">' + fechaBonita(e.fecha) + '</td><td>' + esc(e.concepto) + '</td>' +
+      '<td><span class="chip">' + esc(e.categoria) + '</span></td>' +
+      '<td class="num">' + money(e.monto) + '</td>' +
+      '<td class="' + (vencido ? 'fila-vence' : pronto ? 'fila-pronto' : '') + '">' +
+        (e.vence ? fechaBonita(e.vence) + (vencido ? ' · vencido' : pronto ? ' · esta semana' : '') : 'sin fecha') + '</td>' +
+      '<td><button class="btn btn-outline btn-sm" data-pagar="' + e.id + '">Marcar pagado</button></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="vacio-msg">No hay compras pendientes de pago</td></tr>';
+}
+document.getElementById('cont-tipos').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]'); if (!b) return;
+  const cfg = getConfig();
+  cfg.tiposGasto = cfg.tiposGasto || {};
+  cfg.tiposGasto[b.dataset.cat] = tipoGasto(b.dataset.cat) === 'fijo' ? 'variable' : 'fijo';
+  DB.set(LS.config, cfg);
+  empujarConfig();
+  renderContabilidad();
+});
+document.getElementById('cont-pagar').addEventListener('click', async e => {
+  const b = e.target.closest('[data-pagar]'); if (!b) return;
+  const ok = await confirmar('¿Marcar como pagada?', 'La compra dejará de aparecer en cuentas por pagar.');
+  if (!ok) return;
+  const egresos = getEgresos();
+  const g = egresos.find(x => x.id === b.dataset.pagar);
+  if (g){ g.pagado = true; DB.set(LS.egresos, egresos); sincronizarRegistro('egreso', g); }
+  renderContabilidad();
+});
+
+/* ---------- FISCAL ---------- */
+function renderFiscal(){
+  const m = metricas(fisPeriodo);
+  const conF = m.egresos.filter(e => e.factura);
+  const sinF = m.egresos.filter(e => !e.factura);
+  const montoF = conF.reduce((s,e) => s + e.monto, 0);
+  const montoS = sinF.reduce((s,e) => s + e.monto, 0);
+  // El monto facturado incluye IVA: se extrae para estimar lo acreditable
+  const ivaAcred = montoF - (montoF / (1 + IVA));
+
+  document.getElementById('fis-kpis').innerHTML =
+    '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">' +
+    [['Gasto con factura', money(montoF), 'verde', conF.length + ' comprobantes'],
+     ['Gasto sin factura', money(montoS), 'amarillo', sinF.length + ' registros'],
+     ['% facturado', (montoF + montoS) ? (montoF/(montoF+montoS)*100).toFixed(1) + '%' : '—', 'azul', 'del gasto total'],
+     ['IVA acreditable estimado', money(ivaAcred), 'azul', 'suponiendo 16% incluido']
+    ].map(([e,v,col,d]) =>
+      '<div class="kpi ' + col + '"><div class="etiqueta">' + e + '</div><div class="valor">' + v + '</div><div class="detalle">' + d + '</div></div>'
+    ).join('') + '</div>';
+
+  const porCat = {};
+  m.egresos.forEach(e => {
+    const d = porCat[e.categoria] = porCat[e.categoria] || { con:0, sin:0 };
+    if (e.factura) d.con += e.monto; else d.sin += e.monto;
+  });
+  const filas = Object.entries(porCat).sort((a,b) => (b[1].con + b[1].sin) - (a[1].con + a[1].sin));
+  document.getElementById('fis-categorias').innerHTML = filas.length ? filas.map(([ct,d]) => {
+    const tot = d.con + d.sin, p = tot ? d.con/tot*100 : 0;
+    return '<tr><td>' + esc(ct) + '</td><td class="num">' + money(d.con) + '</td>' +
+      '<td class="num">' + money(d.sin) + '</td>' +
+      '<td class="num ' + (p >= 80 ? 'margen-ok' : p >= 40 ? 'margen-bajo' : 'margen-mal') + '">' + p.toFixed(0) + '%</td>' +
+      '<td class="num">' + money(d.con - d.con/(1+IVA)) + '</td></tr>';
+  }).join('') : '<tr><td colspan="5" class="vacio-msg">Sin egresos en el período</td></tr>';
+}
+document.getElementById('fis-periodo').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  fisPeriodo = b.dataset.periodo;
+  document.querySelectorAll('#fis-periodo button').forEach(x => x.classList.toggle('activo', x === b));
+  renderFiscal();
+});
+// Excel con lo que el contador necesita del período
+document.getElementById('fis-exportar').addEventListener('click', () => {
+  if (typeof XLSX === 'undefined'){ toast('Se requiere internet para generar el Excel', 'error'); return; }
+  const m = metricas(fisPeriodo);
+  if (!m.ventas.length && !m.egresos.length){ toast('No hay movimientos en el período', 'alerta'); return; }
+  const wb = XLSX.utils.book_new();
+
+  const ingresos = {};
+  m.ventas.forEach(v => { (ingresos[v.fecha] = ingresos[v.fecha] || { Fecha:v.fecha, Comandas:0, Ingresos:0 }); ingresos[v.fecha].Comandas++; ingresos[v.fecha].Ingresos += v.total; });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(
+    Object.values(ingresos).sort((a,b) => a.Fecha.localeCompare(b.Fecha))
+      .map(r => ({ ...r, Ingresos: +r.Ingresos.toFixed(2) }))), 'Ingresos por día');
+
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(m.egresos.map(e => ({
+    Fecha: e.fecha, Categoría: e.categoria, Tipo: tipoGasto(e.categoria),
+    Proveedor: e.concepto, Monto: e.monto,
+    'Forma de pago': e.pago, Factura: e.factura ? 'Sí' : 'No',
+    'IVA estimado': e.factura ? +(e.monto - e.monto/(1+IVA)).toFixed(2) : 0,
+    Partidas: (e.items || []).map(i => i.cantidad + (i.unidad ? ' ' + i.unidad : '') + ' ' + i.descripcion).join(' | ')
+  }))), 'Egresos');
+
+  const conF = m.egresos.filter(e => e.factura);
+  const montoF = conF.reduce((s,e) => s + e.monto, 0);
+  let fijos = 0, variables = 0;
+  m.egresos.forEach(e => { if (tipoGasto(e.categoria) === 'fijo') fijos += e.monto; else variables += e.monto; });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
+    { Concepto:'Ingresos del período', Monto:+m.ingresos.toFixed(2) },
+    { Concepto:'Gastos fijos', Monto:+fijos.toFixed(2) },
+    { Concepto:'Gastos variables', Monto:+variables.toFixed(2) },
+    { Concepto:'Resultado', Monto:+(m.ingresos - fijos - variables).toFixed(2) },
+    { Concepto:'Gasto con factura', Monto:+montoF.toFixed(2) },
+    { Concepto:'IVA acreditable estimado (16%)', Monto:+(montoF - montoF/(1+IVA)).toFixed(2) }
+  ]), 'Resumen');
+
+  XLSX.writeFile(wb, 'FridaDiego_Contable_' + hoyISO() + '.xlsx');
+  toast('✓ Reporte contable descargado', 'exito');
+});
+
+
+/* ============================================================
+   FINANCIAMIENTO · líneas de crédito e inversionistas
+   ============================================================ */
+let finSubtab = 'rentabilidad', fifLineaAbierta = null, fifInvAbierto = null;
+
+/* ---- Formulario genérico ---- */
+let _ffOk = null;
+// Abre un formulario con los campos indicados y entrega los valores al confirmar
+function formulario(titulo, sub, campos, alGuardar){
+  document.getElementById('ff-titulo').textContent = titulo;
+  document.getElementById('ff-sub').textContent = sub || '';
+  document.getElementById('ff-campos').innerHTML = campos.map(ca => {
+    if (ca.tipo === 'select'){
+      return '<div class="campo"><label for="ff-' + ca.id + '">' + esc(ca.label) + '</label>' +
+        '<select id="ff-' + ca.id + '">' + ca.opciones.map(o =>
+          '<option value="' + esc(o.valor !== undefined ? o.valor : o) + '"' +
+          ((ca.valor !== undefined && String(ca.valor) === String(o.valor !== undefined ? o.valor : o)) ? ' selected' : '') +
+          '>' + esc(o.texto !== undefined ? o.texto : o) + '</option>').join('') + '</select></div>';
+    }
+    return '<div class="campo"><label for="ff-' + ca.id + '">' + esc(ca.label) + '</label>' +
+      '<input type="' + (ca.tipo || 'text') + '" id="ff-' + ca.id + '"' +
+      (ca.tipo === 'number' ? ' step="0.01" min="0"' : '') +
+      ' value="' + esc(ca.valor !== undefined ? ca.valor : '') + '"' +
+      (ca.placeholder ? ' placeholder="' + esc(ca.placeholder) + '"' : '') + '>' +
+      (ca.ayuda ? '<span style="font-size:12px; color:var(--gris-osc)">' + esc(ca.ayuda) + '</span>' : '') + '</div>';
+  }).join('');
+  _ffOk = () => {
+    const vals = {};
+    campos.forEach(ca => {
+      const el = document.getElementById('ff-' + ca.id);
+      vals[ca.id] = ca.tipo === 'number' ? (parseFloat(el.value) || 0) : el.value.trim();
+    });
+    if (alGuardar(vals) !== false) cerrarFormulario();
+  };
+  document.getElementById('ff-fondo').classList.add('visible');
+  setTimeout(() => { const p = document.querySelector('#ff-campos input, #ff-campos select'); if (p) p.focus(); }, 60);
+}
+function cerrarFormulario(){ document.getElementById('ff-fondo').classList.remove('visible'); _ffOk = null; }
+document.getElementById('ff-ok').addEventListener('click', () => { if (_ffOk) _ffOk(); });
+document.getElementById('ff-cancelar').addEventListener('click', cerrarFormulario);
+document.getElementById('ff-fondo').addEventListener('click', e => { if (e.target.id === 'ff-fondo') cerrarFormulario(); });
+
+/* ---- Fuentes de pago en el formulario de egresos ---- */
+// Llena el selector con caja, banco y las líneas de crédito activas
+function llenarFuentes(){
+  const sel = document.getElementById('e-fuente');
+  if (!sel) return;
+  const lineas = getFinanzas().lineas.filter(l => l.activo !== false);
+  sel.innerHTML =
+    '<option value="caja">Efectivo de caja</option>' +
+    '<option value="banco">Cuenta bancaria</option>' +
+    lineas.map(l => '<option value="' + esc(l.id) + '">💳 ' + esc(l.nombre) + '</option>').join('');
+  mostrarSaldoFuente();
+}
+// Al elegir una línea muestra cuánto le queda disponible
+function mostrarSaldoFuente(){
+  const sel = document.getElementById('e-fuente');
+  const av = document.getElementById('e-fuente-saldo');
+  if (!sel || !av) return;
+  const v = sel.value;
+  if (v === 'caja' || v === 'banco'){ av.textContent = ''; return; }
+  const s = saldoLinea(v);
+  av.textContent = s.limite
+    ? 'Disponible: ' + money(s.disponible) + ' de ' + money(s.limite)
+    : 'Saldo actual: ' + money(s.saldo);
+  av.style.color = (s.limite && s.disponible < 0) ? 'var(--peligro)' : 'var(--gris-osc)';
+}
+document.getElementById('e-fuente').addEventListener('change', mostrarSaldoFuente);
+
+/* ---- Vista de financiamiento ---- */
+function renderFinanciamiento(){
+  const f = getFinanzas();
+
+  // Resumen general
+  const totCargos = f.lineas.reduce((s,l) => s + saldoLinea(l.id).saldo, 0);
+  const totLimite = f.lineas.reduce((s,l) => s + (+l.limite || 0), 0);
+  const totAport = f.inversionistas.reduce((s,i) => s + (+i.aportacion || 0), 0);
+  const totPagInv = f.pagosInv.reduce((s,p) => s + p.monto, 0);
+  document.getElementById('fif-kpis').innerHTML =
+    '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">' +
+    [['Deuda en líneas', money(totCargos), totCargos > 0 ? 'rojo' : 'verde', f.lineas.length + ' líneas registradas'],
+     ['Crédito disponible', money(totLimite - totCargos), 'azul', 'de ' + money(totLimite) + ' autorizado'],
+     ['Capital aportado', money(totAport), 'azul', f.inversionistas.length + ' inversionistas'],
+     ['Pagado a inversionistas', money(totPagInv), 'rosa', totAport ? (totPagInv/totAport*100).toFixed(0) + '% del capital' : '—']
+    ].map(([e,v,col,d]) =>
+      '<div class="kpi ' + col + '"><div class="etiqueta">' + e + '</div><div class="valor">' + v + '</div><div class="detalle">' + d + '</div></div>'
+    ).join('') + '</div>';
+
+  // Líneas de crédito
+  const hoy = hoyISO();
+  document.getElementById('fif-lineas').innerHTML = f.lineas.length ? f.lineas.map(l => {
+    const s = saldoLinea(l.id);
+    const prox = proximoPagoLinea(l);
+    const clase = s.uso >= 90 ? 'alto' : s.uso >= 60 ? 'medio' : '';
+    return '<tr>' +
+      '<td><b>' + esc(l.nombre) + '</b>' + (l.activo === false ? '<span class="badge-pend">inactiva</span>' : '') + '</td>' +
+      '<td style="font-size:13px">' + esc(l.tipo || '—') + '</td>' +
+      '<td class="num">' + (s.limite ? money(s.limite) : '—') + '</td>' +
+      '<td class="num">' + money(s.saldo) + '</td>' +
+      '<td class="num" style="color:' + (s.limite && s.disponible < 0 ? 'var(--peligro)' : 'inherit') + '">' +
+        (s.limite ? money(s.disponible) : '—') + '</td>' +
+      '<td>' + (s.limite ? '<div class="barra-uso"><div class="' + clase + '" style="width:' + Math.min(s.uso,100).toFixed(0) + '%"></div></div>' +
+        '<span class="pct">' + s.uso.toFixed(0) + '%</span>' : '—') + '</td>' +
+      '<td style="font-size:13px">' + (prox ? fechaBonita(prox) : 'sin día de pago') + '</td>' +
+      '<td><button class="btn btn-outline btn-sm" data-vl="' + esc(l.id) + '">Ver</button> ' +
+          '<button class="btn-x" data-dl="' + esc(l.id) + '" title="Eliminar">🗑</button></td></tr>';
+  }).join('') : '<tr><td colspan="8" class="vacio-msg">Sin líneas de crédito registradas</td></tr>';
+
+  // Detalle de movimientos de la línea abierta
+  const det = document.getElementById('fif-detalle');
+  if (fifLineaAbierta){
+    const l = f.lineas.find(x => x.id === fifLineaAbierta);
+    if (!l){ det.innerHTML = ''; }
+    else {
+      const movs = getEgresos().filter(e => e.fuente === l.id)
+        .map(e => ({ fecha:e.fecha, txt:e.concepto + ' · ' + e.categoria, monto:e.monto, tipo:'cargo' }))
+        .concat(f.abonos.filter(a => a.lineaId === l.id)
+          .map(a => ({ fecha:a.fecha, txt:'Pago' + (a.notas ? ' · ' + a.notas : ''), monto:a.monto, tipo:'abono', id:a.id })))
+        .sort((a,b) => b.fecha.localeCompare(a.fecha));
+      const s = saldoLinea(l.id);
+      det.innerHTML = '<div class="mov-lista"><h3 style="font-size:17px">Movimientos · ' + esc(l.nombre) + '</h3>' +
+        '<p class="vista-sub">' + movs.length + ' movimientos · saldo ' + money(s.saldo) +
+        (l.tasa ? ' · tasa ' + l.tasa + '% anual' : '') + '</p>' +
+        (movs.length ? movs.slice(0, 40).map(m =>
+          '<div class="mov-fila"><span class="mono" style="min-width:90px">' + fechaBonita(m.fecha) + '</span>' +
+          '<span style="flex:1">' + esc(m.txt) + '</span>' +
+          '<span class="' + (m.tipo === 'cargo' ? 'cargo' : 'abono') + '">' +
+            (m.tipo === 'cargo' ? '+' : '−') + money(m.monto) + '</span>' +
+          (m.id ? '<button class="btn-x" data-da="' + esc(m.id) + '" title="Eliminar pago">×</button>' : '<span style="width:28px"></span>') +
+          '</div>').join('') : '<p class="vacio-msg">Sin movimientos</p>') +
+        '<button class="btn btn-outline btn-sm" data-cerrar-det="1" style="margin-top:var(--e2)">Cerrar detalle</button></div>';
+    }
+  } else det.innerHTML = '';
+
+  // Inversionistas
+  document.getElementById('fif-inversionistas').innerHTML = f.inversionistas.length ? f.inversionistas.map(i => {
+    const b = balanceInversionista(i.id);
+    const pend = b.aportacion - b.pagado;
+    return '<tr><td><b>' + esc(i.nombre) + '</b></td>' +
+      '<td class="num">' + money(b.aportacion) + '</td>' +
+      '<td class="num">' + (i.participacion ? i.participacion + '%' : '—') + '</td>' +
+      '<td class="num">' + money(b.pagado) + '</td>' +
+      '<td class="num" style="color:' + (pend <= 0 ? 'var(--exito)' : 'inherit') + '">' +
+        (pend <= 0 ? 'recuperado' : money(pend)) + '</td>' +
+      '<td><button class="btn btn-outline btn-sm" data-vi="' + esc(i.id) + '">Ver</button> ' +
+          '<button class="btn-x" data-di="' + esc(i.id) + '" title="Eliminar">🗑</button></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="vacio-msg">Sin inversionistas registrados</td></tr>';
+
+  // Detalle de pagos del inversionista abierto
+  const dp = document.getElementById('fif-pagos');
+  if (fifInvAbierto){
+    const i = f.inversionistas.find(x => x.id === fifInvAbierto);
+    if (!i){ dp.innerHTML = ''; }
+    else {
+      const pagos = f.pagosInv.filter(p => p.invId === i.id).sort((a,b) => b.fecha.localeCompare(a.fecha));
+      dp.innerHTML = '<div class="mov-lista"><h3 style="font-size:17px">Pagos a ' + esc(i.nombre) + '</h3>' +
+        (pagos.length ? pagos.map(p =>
+          '<div class="mov-fila"><span class="mono" style="min-width:90px">' + fechaBonita(p.fecha) + '</span>' +
+          '<span style="flex:1">' + esc(p.concepto) + (p.notas ? ' · ' + esc(p.notas) : '') + '</span>' +
+          '<span class="abono">' + money(p.monto) + '</span>' +
+          '<button class="btn-x" data-dp="' + esc(p.id) + '" title="Eliminar">×</button></div>').join('')
+          : '<p class="vacio-msg">Sin pagos registrados</p>') +
+        '<button class="btn btn-outline btn-sm" data-cerrar-pag="1" style="margin-top:var(--e2)">Cerrar detalle</button></div>';
+    }
+  } else dp.innerHTML = '';
+}
+
+/* ---- Altas y bajas ---- */
+document.getElementById('fif-nueva-linea').addEventListener('click', () => {
+  formulario('Nueva línea de crédito', 'Registra la fuente de financiamiento para poder cargarle gastos', [
+    { id:'nombre', label:'Nombre', placeholder:'Tarjeta BBVA del negocio' },
+    { id:'tipo', label:'Tipo', tipo:'select', opciones:TIPOS_LINEA },
+    { id:'limite', label:'Límite autorizado ($)', tipo:'number', ayuda:'Déjalo en cero si no tiene límite fijo' },
+    { id:'tasa', label:'Tasa de interés anual (%)', tipo:'number', ayuda:'Opcional, solo informativo' },
+    { id:'diaPago', label:'Día de pago del mes', tipo:'number', ayuda:'Del 1 al 31. Sirve para avisarte del próximo vencimiento' }
+  ], v => {
+    if (!v.nombre){ toast('La línea necesita un nombre', 'alerta'); return false; }
+    const f = getFinanzas();
+    f.lineas.push({ id: uuid(), nombre:v.nombre, tipo:v.tipo, limite:v.limite, tasa:v.tasa, diaPago:v.diaPago, activo:true });
+    setFinanzas(f); llenarFuentes(); renderFinanciamiento();
+    toast('✓ Línea registrada', 'exito');
+  });
+});
+document.getElementById('fif-nuevo-abono').addEventListener('click', () => {
+  const f = getFinanzas();
+  if (!f.lineas.length){ toast('Primero registra una línea de crédito', 'alerta'); return; }
+  formulario('Registrar pago a una línea', 'El abono reduce el saldo de la línea', [
+    { id:'lineaId', label:'Línea', tipo:'select', opciones:f.lineas.map(l => ({ valor:l.id, texto:l.nombre })) },
+    { id:'fecha', label:'Fecha del pago', tipo:'date', valor:hoyISO() },
+    { id:'monto', label:'Monto ($)', tipo:'number' },
+    { id:'notas', label:'Nota', placeholder:'Pago mínimo, liquidación…' }
+  ], v => {
+    if (!(v.monto > 0)){ toast('Captura un monto mayor a cero', 'alerta'); return false; }
+    const fz = getFinanzas();
+    fz.abonos.push({ id: uuid(), lineaId:v.lineaId, fecha:v.fecha || hoyISO(), monto:v.monto, notas:v.notas, ts:Date.now() });
+    setFinanzas(fz); renderFinanciamiento();
+    toast('✓ Pago registrado · ' + money(v.monto), 'exito');
+  });
+});
+document.getElementById('fif-nuevo-inv').addEventListener('click', () => {
+  formulario('Nuevo inversionista', 'Quién puso capital en el negocio', [
+    { id:'nombre', label:'Nombre', placeholder:'Nombre del socio' },
+    { id:'aportacion', label:'Capital aportado ($)', tipo:'number' },
+    { id:'participacion', label:'Participación (%)', tipo:'number', ayuda:'Opcional' },
+    { id:'notas', label:'Nota', placeholder:'Condiciones del acuerdo' }
+  ], v => {
+    if (!v.nombre){ toast('El inversionista necesita un nombre', 'alerta'); return false; }
+    const f = getFinanzas();
+    f.inversionistas.push({ id: uuid(), nombre:v.nombre, aportacion:v.aportacion, participacion:v.participacion, notas:v.notas, activo:true });
+    setFinanzas(f); renderFinanciamiento();
+    toast('✓ Inversionista registrado', 'exito');
+  });
+});
+document.getElementById('fif-nuevo-pago').addEventListener('click', () => {
+  const f = getFinanzas();
+  if (!f.inversionistas.length){ toast('Primero registra un inversionista', 'alerta'); return; }
+  formulario('Pago a inversionista', 'Reparto de utilidades, retiro de capital o pago de préstamo', [
+    { id:'invId', label:'Inversionista', tipo:'select', opciones:f.inversionistas.map(i => ({ valor:i.id, texto:i.nombre })) },
+    { id:'fecha', label:'Fecha', tipo:'date', valor:hoyISO() },
+    { id:'monto', label:'Monto ($)', tipo:'number' },
+    { id:'concepto', label:'Concepto', tipo:'select', opciones:CONCEPTOS_INV },
+    { id:'notas', label:'Nota', placeholder:'Opcional' }
+  ], v => {
+    if (!(v.monto > 0)){ toast('Captura un monto mayor a cero', 'alerta'); return false; }
+    const fz = getFinanzas();
+    fz.pagosInv.push({ id: uuid(), invId:v.invId, fecha:v.fecha || hoyISO(), monto:v.monto, concepto:v.concepto, notas:v.notas, ts:Date.now() });
+    setFinanzas(fz); renderFinanciamiento();
+    toast('✓ Pago registrado · ' + money(v.monto), 'exito');
+  });
+});
+// Acciones sobre las tablas y los detalles
+document.getElementById('fin-financiamiento').addEventListener('click', async e => {
+  const vl = e.target.closest('[data-vl]');
+  if (vl){ fifLineaAbierta = fifLineaAbierta === vl.dataset.vl ? null : vl.dataset.vl; renderFinanciamiento(); return; }
+  const vi = e.target.closest('[data-vi]');
+  if (vi){ fifInvAbierto = fifInvAbierto === vi.dataset.vi ? null : vi.dataset.vi; renderFinanciamiento(); return; }
+  if (e.target.closest('[data-cerrar-det]')){ fifLineaAbierta = null; renderFinanciamiento(); return; }
+  if (e.target.closest('[data-cerrar-pag]')){ fifInvAbierto = null; renderFinanciamiento(); return; }
+
+  const dl = e.target.closest('[data-dl]');
+  if (dl){
+    const cargos = getEgresos().filter(x => x.fuente === dl.dataset.dl).length;
+    const ok = await confirmar('¿Eliminar la línea?',
+      cargos ? 'Hay ' + cargos + ' gastos cargados a esta línea. Se conservan en el historial, pero dejarán de tener fuente identificada.'
+             : 'No tiene gastos cargados.');
+    if (!ok) return;
+    const f = getFinanzas();
+    f.lineas = f.lineas.filter(l => l.id !== dl.dataset.dl);
+    f.abonos = f.abonos.filter(a => a.lineaId !== dl.dataset.dl);
+    setFinanzas(f); fifLineaAbierta = null; llenarFuentes(); renderFinanciamiento();
+    return;
+  }
+  const di = e.target.closest('[data-di]');
+  if (di){
+    const ok = await confirmar('¿Eliminar al inversionista?', 'Se borra también el historial de pagos que se le registraron.');
+    if (!ok) return;
+    const f = getFinanzas();
+    f.inversionistas = f.inversionistas.filter(i => i.id !== di.dataset.di);
+    f.pagosInv = f.pagosInv.filter(p => p.invId !== di.dataset.di);
+    setFinanzas(f); fifInvAbierto = null; renderFinanciamiento();
+    return;
+  }
+  const da = e.target.closest('[data-da]');
+  if (da){
+    const ok = await confirmar('¿Eliminar este pago?', 'El saldo de la línea volverá a subir.');
+    if (!ok) return;
+    const f = getFinanzas();
+    f.abonos = f.abonos.filter(a => a.id !== da.dataset.da);
+    setFinanzas(f); renderFinanciamiento();
+    return;
+  }
+  const dp = e.target.closest('[data-dp]');
+  if (dp){
+    const ok = await confirmar('¿Eliminar este pago?', 'Se descontará del total pagado al inversionista.');
+    if (!ok) return;
+    const f = getFinanzas();
+    f.pagosInv = f.pagosInv.filter(p => p.id !== dp.dataset.dp);
+    setFinanzas(f); renderFinanciamiento();
+  }
+});
+// Cambio entre rentabilidad y financiamiento
+document.getElementById('fin-subtabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  finSubtab = b.dataset.ft;
+  document.querySelectorAll('#fin-subtabs button').forEach(x => x.classList.toggle('activo', x === b));
+  document.getElementById('fin-rentabilidad').style.display = finSubtab === 'rentabilidad' ? '' : 'none';
+  document.getElementById('fin-financiamiento').style.display = finSubtab === 'financiamiento' ? '' : 'none';
+  if (finSubtab === 'financiamiento') renderFinanciamiento();
 });
 
 /* ============================================================
