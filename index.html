@@ -304,6 +304,50 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 }
 #mn-aviso b{ color:var(--alerta); }
 
+/* Panel de captura por recuadros */
+#panel-caja{
+  background:var(--blanco-cal); border-radius:var(--radio); width:100%; max-width:860px;
+  max-height:92vh; display:flex; flex-direction:column; overflow:hidden;
+  border:1px solid var(--gris-claro); box-shadow:0 12px 40px rgba(12,17,72,.24);
+  animation:entrada .25s ease both;
+}
+.panel-head{
+  display:flex; align-items:flex-start; gap:var(--e2); padding:var(--e3) var(--e3) var(--e2);
+  background:var(--blanco); border-bottom:1px solid var(--gris-claro);
+}
+.panel-head h3{ margin:0; }
+.panel-ruta{ font-size:13.5px; color:var(--gris-osc); margin-top:3px; }
+.panel-ruta .paso{ color:var(--azul); font-weight:600; cursor:pointer; }
+.panel-ruta .paso:hover{ text-decoration:underline; }
+.panel-buscar{ padding:var(--e2) var(--e3) 0; background:var(--blanco); }
+#panel-cuerpo{ padding:var(--e3); overflow-y:auto; flex:1; }
+.panel-pie{
+  display:flex; align-items:center; gap:var(--e2); padding:var(--e2) var(--e3);
+  background:var(--blanco); border-top:1px solid var(--gris-claro);
+}
+#panel-resumen{ flex:1; font-size:14px; color:var(--gris-osc); font-family:var(--f-mono); }
+.panel-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:var(--e2); }
+.panel-box{
+  border:1px solid var(--gris-claro); background:var(--blanco); border-radius:var(--radio);
+  padding:var(--e2) 14px; text-align:center; min-height:104px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;
+  transition:border-color .15s, box-shadow .15s, transform .15s;
+}
+.panel-box:hover{ border-color:var(--azul); box-shadow:var(--sombra-hover); }
+.panel-box:active{ transform:scale(.98); }
+.panel-box .ico{ font-size:30px; line-height:1; }
+.panel-box .nom{ font-family:var(--f-titulo); font-size:16.5px; color:var(--azul); line-height:1.25; }
+.panel-box .precio{ font-family:var(--f-mono); font-size:17px; color:var(--texto); font-weight:500; }
+.panel-box .meta{ font-size:11.5px; color:var(--texto-suave); }
+.panel-box.volver{ background:var(--azul-clar); border-color:var(--azul-clar); }
+.panel-box.volver .nom{ font-family:var(--f-cuerpo); font-size:14px; font-weight:600; }
+.panel-vacio{ text-align:center; color:var(--texto-suave); padding:var(--e4); font-style:italic; }
+@media (max-width: 720px){
+  #panel-caja{ max-height:100vh; height:100vh; border-radius:0; max-width:none; }
+  .panel-grid{ grid-template-columns:repeat(auto-fill,minmax(136px,1fr)); gap:10px; }
+  .panel-box{ min-height:92px; }
+}
+
 /* Selección de opciones del producto */
 #op-caja{
   background:var(--blanco); border-radius:var(--radio); padding:var(--e4); max-width:560px; width:100%;
@@ -811,7 +855,8 @@ tr.prod-inactivo{ opacity:.5; }
               <tbody id="items-body"></tbody>
             </table>
           </div>
-          <button class="btn btn-outline btn-sm" id="btn-linea-blanco" style="margin-top:12px">+ Agregar artículo</button>
+          <button class="btn btn-azul" id="btn-panel" style="width:100%; margin-top:12px; font-size:16px">➕ Agregar productos del menú</button>
+          <button class="btn btn-outline btn-sm" id="btn-linea-blanco" style="margin-top:10px">+ Artículo libre</button>
           <p id="aviso-precios" style="display:none; margin-top:12px; font-size:13px; color:var(--gris-osc)">🔒 Los precios los fija el menú · para cambiarlos se necesita un administrador</p>
           <div class="total-grande">
             <span class="txt">Total</span>
@@ -1200,6 +1245,25 @@ tr.prod-inactivo{ opacity:.5; }
 
 <!-- Toasts y modal -->
 <div id="toasts"></div>
+<!-- Panel de captura por recuadros -->
+<div id="panel-fondo" class="modal-fondo-base">
+  <div id="panel-caja">
+    <div class="panel-head">
+      <div>
+        <h3 id="panel-titulo">Agregar productos</h3>
+        <div class="panel-ruta" id="panel-ruta"></div>
+      </div>
+      <button class="btn-x" id="panel-cerrar" title="Cerrar" style="font-size:24px">×</button>
+    </div>
+    <div class="panel-buscar"><input type="search" id="panel-q" placeholder="O busca directo por nombre…" autocomplete="off"></div>
+    <div id="panel-cuerpo"></div>
+    <div class="panel-pie">
+      <span id="panel-resumen"></span>
+      <button class="btn btn-azul btn-sm" id="panel-listo">Terminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Selección de opciones al agregar un producto a la comanda -->
 <div id="op-fondo" class="modal-fondo-base">
   <div id="op-caja">
@@ -2408,8 +2472,9 @@ function abrirOpciones(p, grupos){
   document.getElementById('op-fondo').classList.add('visible');
 }
 // Dibuja los grupos con sus opciones y el precio acumulado
-function pintarOpciones(mostrarFaltantes){
-  document.getElementById('op-grupos').innerHTML = opGrupos.map(g => {
+function pintarOpciones(mostrarFaltantes, destino){
+  const cont = document.getElementById(destino || 'op-grupos');
+  cont.innerHTML = opGrupos.map(g => {
     const falta = mostrarFaltantes && g.obligatorio && !opElegido[g.id];
     return '<div class="op-grupo"><span class="etq">' + esc(g.nombre) +
       (g.obligatorio ? ' <span class="req">*</span>' : '') +
@@ -2420,7 +2485,8 @@ function pintarOpciones(mostrarFaltantes){
         (o.precioExtra ? '<span class="extra">+' + money(o.precioExtra).replace('$','$') + '</span>' : '') +
         '</button>').join('') + '</div></div>';
   }).join('');
-  document.getElementById('op-total').textContent = money(precioOpciones());
+  const t = document.getElementById(destino === 'panel-ops' ? 'panel-op-total' : 'op-total');
+  if (t) t.textContent = money(precioOpciones());
 }
 // Precio = base del producto + extras de las opciones elegidas
 function precioOpciones(){
@@ -2483,6 +2549,182 @@ listaEl.addEventListener('mousedown', e => {
 });
 document.addEventListener('click', e => {
   if (!e.target.closest('.buscador-wrap')) listaEl.style.display = 'none';
+});
+
+
+/* ============================================================
+   PANEL DE CAPTURA · categoría › subcategoría › producto › opciones
+   Pensado para tocarse con el dedo durante el servicio.
+   ============================================================ */
+const ICONO_CAT = { 'Platillos':'🍽️', 'Bebidas':'🥤', 'Postres':'🍰', 'Otros/adicionales':'➕' };
+let pnNivel = 'categorias', pnCat = '', pnSub = '', pnQ = '';
+
+// Abre el panel desde el principio
+function abrirPanel(){
+  pnNivel = 'categorias'; pnCat = ''; pnSub = ''; pnQ = '';
+  document.getElementById('panel-q').value = '';
+  renderPanel();
+  document.getElementById('panel-fondo').classList.add('visible');
+}
+function cerrarPanel(){ document.getElementById('panel-fondo').classList.remove('visible'); }
+
+// Dibuja el nivel actual del panel
+function renderPanel(){
+  const cat = catalogoActivo();
+  const cuerpo = document.getElementById('panel-cuerpo');
+  const ruta = document.getElementById('panel-ruta');
+
+  // Migas de pan: permiten regresar a cualquier nivel anterior
+  let migas = '<span class="paso" data-ir="categorias">Todo el menú</span>';
+  if (pnCat) migas += ' › <span class="paso" data-ir="subcategorias">' + esc(pnCat) + '</span>';
+  if (pnSub) migas += ' › <span class="paso" data-ir="productos">' + esc(pnSub) + '</span>';
+  if (pnNivel === 'opciones' && opProducto) migas += ' › <b>' + esc(opProducto.nombre) + '</b>';
+  ruta.innerHTML = migas;
+
+  // Búsqueda directa: salta la navegación y muestra coincidencias
+  if (pnQ.trim()){
+    const q = pnQ.trim().toLowerCase();
+    const res = cat.productos.filter(p => p.activo && p.nombre.toLowerCase().includes(q));
+    cuerpo.innerHTML = res.length
+      ? '<div class="panel-grid">' + res.slice(0, 60).map(cajaProducto).join('') + '</div>'
+      : '<p class="panel-vacio">Ningún producto coincide con “' + esc(pnQ) + '”</p>';
+    actualizarResumenPanel();
+    return;
+  }
+
+  if (pnNivel === 'categorias'){
+    const cats = CATEGORIAS_MENU.filter(ct => cat.productos.some(p => p.activo && p.categoria === ct));
+    cuerpo.innerHTML = cats.length ? '<div class="panel-grid">' + cats.map(ct => {
+      const n = cat.productos.filter(p => p.activo && p.categoria === ct).length;
+      return '<div class="panel-box" data-cat="' + esc(ct) + '">' +
+        '<span class="ico">' + (ICONO_CAT[ct] || '🍴') + '</span>' +
+        '<span class="nom">' + esc(ct) + '</span>' +
+        '<span class="meta">' + n + ' producto' + (n === 1 ? '' : 's') + '</span></div>';
+    }).join('') + '</div>'
+    : '<p class="panel-vacio">El menú está vacío. Cárgalo desde la pestaña Menú.</p>';
+
+  } else if (pnNivel === 'subcategorias'){
+    const subs = (SUBCATEGORIAS[pnCat] || []).filter(s => cat.productos.some(p => p.activo && p.categoria === pnCat && p.subcategoria === s));
+    cuerpo.innerHTML = '<div class="panel-grid">' +
+      '<div class="panel-box volver" data-ir="categorias"><span class="ico">↩</span><span class="nom">Regresar</span></div>' +
+      subs.map(s => {
+        const n = cat.productos.filter(p => p.activo && p.subcategoria === s).length;
+        return '<div class="panel-box" data-sub="' + esc(s) + '">' +
+          '<span class="nom">' + esc(s) + '</span>' +
+          '<span class="meta">' + n + ' producto' + (n === 1 ? '' : 's') + '</span></div>';
+      }).join('') + '</div>';
+
+  } else if (pnNivel === 'productos'){
+    // Ordenados por lo que más se vende, para que lo frecuente quede arriba
+    const prods = cat.productos
+      .filter(p => p.activo && p.categoria === pnCat && p.subcategoria === pnSub)
+      .sort((a,b) => (b.popularidad || 0) - (a.popularidad || 0) || a.nombre.localeCompare(b.nombre));
+    cuerpo.innerHTML = '<div class="panel-grid">' +
+      '<div class="panel-box volver" data-ir="subcategorias"><span class="ico">↩</span><span class="nom">Regresar</span></div>' +
+      prods.map(cajaProducto).join('') + '</div>';
+
+  } else if (pnNivel === 'opciones'){
+    cuerpo.innerHTML =
+      '<div class="panel-grid" style="margin-bottom:var(--e3)">' +
+        '<div class="panel-box volver" data-ir="productos"><span class="ico">↩</span><span class="nom">Regresar</span></div></div>' +
+      '<div id="panel-ops"></div>' +
+      '<div class="op-total"><span>Precio del artículo</span><span class="cifra" id="panel-op-total">$0.00</span></div>' +
+      '<button class="btn btn-azul" id="panel-agregar" style="width:100%">✓ Agregar a la comanda</button>';
+    pintarOpciones(false, 'panel-ops');
+  }
+  actualizarResumenPanel();
+}
+// Recuadro de un producto con su precio y cuántas opciones tiene
+function cajaProducto(p){
+  const n = (p.grupos || []).length;
+  return '<div class="panel-box" data-prod="' + p.id + '">' +
+    '<span class="nom">' + esc(p.nombre) + '</span>' +
+    '<span class="precio">' + (p.precio ? money(p.precio) : 's/precio') + '</span>' +
+    (n ? '<span class="meta">elegir opciones</span>' : '') + '</div>';
+}
+// Pie con lo que lleva la comanda hasta ahora
+function actualizarResumenPanel(){
+  const n = comandaItems.length;
+  const t = comandaItems.reduce((s,it) => s + (it.cantidad||0)*(it.precioUnit||0), 0);
+  document.getElementById('panel-resumen').textContent =
+    n ? 'En la comanda: ' + n + ' artículo' + (n === 1 ? '' : 's') + ' · ' + money(t)
+      : 'La comanda está vacía';
+}
+// Elige un producto dentro del panel: con opciones pasa al cuarto nivel
+function elegirDesdePanel(id){
+  const cat = catalogoActivo();
+  const p = cat.productos.find(x => x.id === id);
+  if (!p) return;
+  const grupos = (p.grupos || [])
+    .map(gid => cat.grupos.find(g => g.id === gid))
+    .filter(g => g && (g.opciones || []).some(o => o.activo));
+  if (!grupos.length){
+    agregarItem(p.nombre, p.precio || 0);
+    toast('✓ ' + p.nombre + ' · ' + money(p.precio || 0), 'exito');
+    actualizarResumenPanel();
+    return;
+  }
+  opProducto = p; opGrupos = grupos; opElegido = {};
+  grupos.forEach(g => {
+    if (!g.obligatorio){
+      const neutra = (g.opciones || []).find(o => o.activo && /^sin (mención|especificar)/i.test(o.nombre));
+      if (neutra) opElegido[g.id] = neutra.id;
+    }
+  });
+  pnNivel = 'opciones';
+  renderPanel();
+}
+/* ---- Eventos del panel ---- */
+document.getElementById('btn-panel').addEventListener('click', abrirPanel);
+document.getElementById('panel-cerrar').addEventListener('click', cerrarPanel);
+document.getElementById('panel-listo').addEventListener('click', cerrarPanel);
+document.getElementById('panel-fondo').addEventListener('click', e => { if (e.target.id === 'panel-fondo') cerrarPanel(); });
+document.getElementById('panel-q').addEventListener('input', e => { pnQ = e.target.value; renderPanel(); });
+document.getElementById('panel-cuerpo').addEventListener('click', e => {
+  // Agregar con las opciones elegidas
+  if (e.target.closest('#panel-agregar')){
+    const faltan = opGrupos.filter(g => g.obligatorio && !opElegido[g.id]);
+    if (faltan.length){
+      pintarOpciones(true, 'panel-ops');
+      toast('Falta elegir: ' + faltan.map(g => g.nombre).join(', '), 'alerta');
+      return;
+    }
+    agregarItem(nombreOpciones(), precioOpciones());
+    toast('✓ ' + nombreOpciones() + ' · ' + money(precioOpciones()), 'exito');
+    opProducto = null; opGrupos = []; opElegido = {};
+    pnNivel = 'productos'; renderPanel();   // vuelve a la lista para seguir capturando
+    return;
+  }
+  // Chips de opciones dentro del panel
+  const chip = e.target.closest('.op-chip');
+  if (chip){
+    const g = chip.dataset.g;
+    opElegido[g] = opElegido[g] === chip.dataset.o ? null : chip.dataset.o;
+    pintarOpciones(false, 'panel-ops');
+    return;
+  }
+  // Navegación entre niveles
+  const volver = e.target.closest('[data-ir]');
+  if (volver){
+    pnNivel = volver.dataset.ir;
+    if (pnNivel === 'categorias'){ pnCat = ''; pnSub = ''; }
+    if (pnNivel === 'subcategorias') pnSub = '';
+    renderPanel(); return;
+  }
+  const bc = e.target.closest('[data-cat]');
+  if (bc){ pnCat = bc.dataset.cat; pnNivel = 'subcategorias'; renderPanel(); return; }
+  const bs = e.target.closest('[data-sub]');
+  if (bs){ pnSub = bs.dataset.sub; pnNivel = 'productos'; renderPanel(); return; }
+  const bp = e.target.closest('[data-prod]');
+  if (bp){ elegirDesdePanel(bp.dataset.prod); return; }
+});
+// Las migas de pan también navegan
+document.getElementById('panel-ruta').addEventListener('click', e => {
+  const p = e.target.closest('[data-ir]'); if (!p) return;
+  pnNivel = p.dataset.ir; pnQ = ''; document.getElementById('panel-q').value = '';
+  if (pnNivel === 'categorias'){ pnCat = ''; pnSub = ''; }
+  if (pnNivel === 'subcategorias') pnSub = '';
+  renderPanel();
 });
 
 /* ---------- Guardar comanda ---------- */
