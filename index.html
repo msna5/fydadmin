@@ -974,8 +974,9 @@ tr.prod-inactivo{ opacity:.5; }
             <input type="text" id="e-concepto" placeholder="Ej. Mercado de Tecámac">
           </div>
           <div class="campo">
-            <label for="e-monto">Monto ($)</label>
+            <label for="e-monto">Monto total ($)</label>
             <input type="number" id="e-monto" min="0" step="0.01" placeholder="0.00">
+            <span id="e-monto-aviso" style="display:none; font-size:12px; color:var(--gris-osc)">Calculado de las partidas</span>
           </div>
           <div class="campo">
             <label for="e-pago">Forma de pago</label>
@@ -997,6 +998,32 @@ tr.prod-inactivo{ opacity:.5; }
             <label for="e-notas">Notas</label>
             <textarea id="e-notas" rows="2" placeholder="Detalle opcional…"></textarea>
           </div>
+        </div>
+        <h3 style="margin-top:var(--e3)">Detalle de la compra <span style="font-family:var(--f-cuerpo); font-size:13px; font-weight:400; color:var(--gris-osc)">· opcional, para gastos con varios productos</span></h3>
+        <div class="tabla-scroll">
+          <table id="tabla-egreso-items">
+            <thead><tr>
+              <th>Producto o insumo</th>
+              <th style="width:95px">Cantidad</th>
+              <th style="width:105px">Unidad</th>
+              <th style="width:110px">Precio unit.</th>
+              <th class="num" style="width:105px">Subtotal</th>
+              <th style="width:40px"></th>
+            </tr></thead>
+            <tbody id="egreso-items-body"></tbody>
+          </table>
+        </div>
+        <datalist id="lista-insumos"></datalist>
+        <datalist id="lista-unidades">
+          <option value="pza"></option><option value="kg"></option><option value="g"></option>
+          <option value="lt"></option><option value="ml"></option><option value="caja"></option>
+          <option value="costal"></option><option value="paquete"></option><option value="manojo"></option>
+          <option value="bolsa"></option><option value="charola"></option><option value="servicio"></option>
+        </datalist>
+        <button class="btn btn-outline btn-sm" id="btn-egreso-item" style="margin-top:12px">+ Agregar partida</button>
+        <div class="total-grande" id="e-total-caja" style="display:none">
+          <span class="txt">Total de la compra</span>
+          <span class="cifra" id="e-total">$0.00</span>
         </div>
         <div class="acciones-form">
           <button class="btn btn-azul" id="btn-guardar-egreso">✓ Guardar egreso</button>
@@ -1116,6 +1143,8 @@ tr.prod-inactivo{ opacity:.5; }
           </div>
           <p style="font-size:13px" class="mono" id="cfg-pendientes"></p>
           <p style="font-size:13px" class="mono" id="cfg-ultima-sync"></p>
+          <p style="font-size:13px" class="mono" id="cfg-lecturas"></p>
+          <button class="btn btn-outline btn-sm" id="btn-rehist" style="margin-top:8px">Volver a descargar el histórico</button>
         </div>
       </details>
 
@@ -1611,7 +1640,20 @@ const FIREBASE_CONFIG = {
   appId: "1:825336824902:web:4d497c5044f5b4521af647"
 };
 
-let fdb = null, fbListo = false;
+let fdb = null, fbListo = false, persistenciaOk = null;
+
+/* ---- Control de lecturas ----
+   Los oyentes en vivo solo miran una ventana reciente. Escuchar la colección
+   completa hacía que cada recarga costara una lectura por cada venta histórica,
+   lo que agota la cuota gratuita en un día de pruebas. El histórico se descarga
+   una sola vez por dispositivo y se conserva en el almacenamiento local. */
+const DIAS_SYNC_VIVO = 45;
+// Fecha de corte de la ventana en vivo, en formato YYYY-MM-DD
+function fechaCorteSync(){
+  const d = new Date();
+  d.setDate(d.getDate() - DIAS_SYNC_VIVO);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
 const _migraciones = new Set();
 // Arranca Firebase si hay configuración pegada arriba; devuelve true si quedó activo
 function iniciarFirebase(){
@@ -1619,7 +1661,13 @@ function iniciarFirebase(){
   try {
     firebase.initializeApp(FIREBASE_CONFIG);
     fdb = firebase.firestore();
-    try { fdb.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch(e){ /* pestañas múltiples */ }
+    // La caché local evita releer la nube en cada recarga. Si falla, hay que saberlo:
+    // sin ella cada apertura cuesta lecturas reales contra la cuota.
+    try {
+      fdb.enablePersistence({ synchronizeTabs: true })
+        .then(() => { persistenciaOk = true; })
+        .catch(err => { persistenciaOk = false; console.warn('Caché local no disponible:', err && err.code); });
+    } catch(e){ persistenciaOk = false; console.warn('Caché local no disponible:', e); }
     fbListo = true;
     return true;
   } catch(err){ console.warn('Firebase no disponible:', err); return false; }
@@ -1660,8 +1708,13 @@ function escucharNube(){
     }
   }, () => {});
   if (!esAdminRol) return;   // hasta aquí llega el mesero
-  fdb.collection('ventas').onSnapshot(s => snapshotRegistros(LS.ventas, 'ventas', s), () => {});
-  fdb.collection('egresos').onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), () => {});
+  // Solo la ventana reciente va en vivo; lo anterior ya está en el dispositivo
+  const corte = fechaCorteSync();
+  fdb.collection('ventas').where('fecha', '>=', corte)
+    .onSnapshot(s => snapshotRegistros(LS.ventas, 'ventas', s), e => console.warn('ventas:', e && e.code));
+  fdb.collection('egresos').where('fecha', '>=', corte)
+    .onSnapshot(s => snapshotRegistros(LS.egresos, 'egresos', s), e => console.warn('egresos:', e && e.code));
+  cargarHistoricoUnaVez();
   fdb.collection('estado').doc('config').onSnapshot(d => {
     const rc = d.data();
     if (rc && Number(rc.cfgTs || 0) > (Number(getConfig().cfgTs) || 0)){
@@ -1681,14 +1734,17 @@ function escucharNube(){
 }
 // Espejo local de una colección; la primera vez sube los datos previos que falten en la nube
 function snapshotRegistros(llave, col, snap){
+  const corte = fechaCorteSync();
   const nube = [];
   snap.forEach(d => {
     const r = d.data();
     if (r && r.id){ r.sincronizado = !(d.metadata && d.metadata.hasPendingWrites); nube.push(r); }
   });
+  const local = DB.get(llave, []);
   if (!DB.get('frida_fb_migrado', false)){
+    // Solo se suben los que caen dentro de la ventana: lo viejo ya está en la nube
     const ids = new Set(nube.map(r => r.id));
-    const faltantes = DB.get(llave, []).filter(r => r && r.id && !ids.has(r.id));
+    const faltantes = local.filter(r => r && r.id && r.fecha >= corte && !ids.has(r.id));
     faltantes.forEach(r => {
       const copia = Object.assign({}, r, { sincronizado: true });
       fdb.collection(col).doc(r.id).set(copia).catch(() => {});
@@ -1697,10 +1753,39 @@ function snapshotRegistros(llave, col, snap){
     _migraciones.add(col);
     if (_migraciones.size >= 2) DB.set('frida_fb_migrado', true);
   }
-  nube.sort((a,b) => (a.ts || 0) - (b.ts || 0));
-  DB.set(llave, nube);
+  // Conserva el histórico anterior al corte y reemplaza únicamente la ventana viva
+  const antiguos = local.filter(r => r && r.fecha && r.fecha < corte);
+  const union = antiguos.concat(nube).sort((a,b) => (a.ts || 0) - (b.ts || 0));
+  DB.set(llave, union);
   refrescarVistaActual();
   actualizarBadgeSync();
+}
+
+/* ---- Histórico completo: una sola descarga por dispositivo ---- */
+// Trae de golpe todo lo anterior a la ventana viva y lo guarda en el dispositivo
+async function cargarHistoricoUnaVez(forzar){
+  if (!fbListo) return;
+  if (!forzar && DB.get('frida_hist_cargado', 0)) return;
+  if (!(usuarioActual && usuarioActual.rol === 'admin')) return;   // el mesero no necesita histórico
+  try {
+    const corte = fechaCorteSync();
+    const [sv, se] = await Promise.all([
+      fdb.collection('ventas').where('fecha', '<', corte).get(),
+      fdb.collection('egresos').where('fecha', '<', corte).get()
+    ]);
+    let n = 0;
+    [[sv, LS.ventas], [se, LS.egresos]].forEach(([snap, llave]) => {
+      const local = DB.get(llave, []);
+      const ids = new Set(local.map(r => r.id));
+      snap.forEach(d => {
+        const r = d.data();
+        if (r && r.id && !ids.has(r.id)){ r.sincronizado = true; local.push(r); n++; }
+      });
+      DB.set(llave, local.sort((a,b) => (a.ts || 0) - (b.ts || 0)));
+    });
+    DB.set('frida_hist_cargado', Date.now());
+    if (n){ refrescarVistaActual(); toast('Histórico descargado: ' + n + ' registros anteriores', 'exito'); }
+  } catch(err){ console.warn('No se pudo descargar el histórico:', err && err.code); }
 }
 
 // Configuración por defecto (usuarios iniciales incluidos; editables en Config)
@@ -2795,6 +2880,71 @@ function setFactura(on){
 togFactura.addEventListener('click', () => setFactura(!togFactura.classList.contains('on')));
 togFactura.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); setFactura(!togFactura.classList.contains('on')); } });
 
+/* ---------- Partidas del egreso (compra con varios productos) ---------- */
+let egresoItems = [];
+
+// Dibuja las partidas con sus subtotales y actualiza el monto total
+function renderEgresoItems(){
+  const body = document.getElementById('egreso-items-body');
+  if (!egresoItems.length){
+    body.innerHTML = '<tr><td colspan="6" class="vacio-msg">Sin partidas · captura el monto total arriba, o agrega los productos comprados</td></tr>';
+  } else {
+    body.innerHTML = egresoItems.map((it, i) => {
+      const sub = (it.cantidad || 0) * (it.precioUnit || 0);
+      return '<tr>' +
+        '<td><input type="text" list="lista-insumos" value="' + esc(it.descripcion) + '" data-i="' + i + '" data-c="descripcion" placeholder="Jitomate, gas, servilletas…"></td>' +
+        '<td><input type="number" min="0" step="0.01" value="' + it.cantidad + '" data-i="' + i + '" data-c="cantidad"></td>' +
+        '<td><input type="text" list="lista-unidades" value="' + esc(it.unidad) + '" data-i="' + i + '" data-c="unidad" placeholder="kg"></td>' +
+        '<td><input type="number" min="0" step="0.01" value="' + it.precioUnit + '" data-i="' + i + '" data-c="precioUnit"></td>' +
+        '<td class="num mono">' + money(sub) + '</td>' +
+        '<td><button type="button" class="btn-x" data-i="' + i + '" data-c="del" title="Quitar">×</button></td></tr>';
+    }).join('');
+  }
+  sincronizarTotalEgreso();
+}
+// Con partidas el monto se calcula y se bloquea; sin ellas se captura a mano
+function sincronizarTotalEgreso(){
+  const total = +egresoItems.reduce((s,it) => s + (it.cantidad||0)*(it.precioUnit||0), 0).toFixed(2);
+  const campo = document.getElementById('e-monto');
+  const aviso = document.getElementById('e-monto-aviso');
+  const caja = document.getElementById('e-total-caja');
+  if (egresoItems.length){
+    campo.value = total; campo.readOnly = true; campo.style.background = 'var(--blanco-cal)';
+    aviso.style.display = 'block'; caja.style.display = 'flex';
+    document.getElementById('e-total').textContent = money(total);
+  } else {
+    campo.readOnly = false; campo.style.background = '';
+    aviso.style.display = 'none'; caja.style.display = 'none';
+  }
+}
+// Sugerencias con los insumos ya capturados antes
+function refrescarInsumos(){
+  const vistos = new Set();
+  getEgresos().forEach(e => (e.items || []).forEach(it => { if (it.descripcion) vistos.add(it.descripcion); }));
+  document.getElementById('lista-insumos').innerHTML =
+    [...vistos].sort().slice(0, 200).map(n => '<option value="' + esc(n) + '"></option>').join('');
+}
+document.getElementById('btn-egreso-item').addEventListener('click', () => {
+  egresoItems.push({ descripcion:'', cantidad:1, unidad:'', precioUnit:0 });
+  renderEgresoItems();
+  const campos = document.querySelectorAll('#egreso-items-body input[data-c="descripcion"]');
+  if (campos.length) campos[campos.length-1].focus();
+});
+document.getElementById('egreso-items-body').addEventListener('input', e => {
+  const t = e.target, i = +t.dataset.i;
+  if (t.dataset.c === 'descripcion') egresoItems[i].descripcion = t.value;
+  if (t.dataset.c === 'unidad') egresoItems[i].unidad = t.value;
+  if (t.dataset.c === 'cantidad') egresoItems[i].cantidad = parseFloat(t.value) || 0;
+  if (t.dataset.c === 'precioUnit') egresoItems[i].precioUnit = parseFloat(t.value) || 0;
+  const fila = t.closest('tr'), it = egresoItems[i];
+  fila.querySelector('td.num').textContent = money((it.cantidad||0)*(it.precioUnit||0));
+  sincronizarTotalEgreso();
+});
+document.getElementById('egreso-items-body').addEventListener('click', e => {
+  const b = e.target.closest('[data-c="del"]'); if (!b) return;
+  egresoItems.splice(+b.dataset.i, 1); renderEgresoItems();
+});
+
 // Restablece el formulario de egresos
 function limpiarEgreso(){
   document.getElementById('e-fecha').value = hoyISO();
@@ -2804,13 +2954,31 @@ function limpiarEgreso(){
   document.getElementById('e-pago').selectedIndex = 0;
   document.getElementById('e-notas').value = '';
   setFactura(false);
+  egresoItems = [];
+  renderEgresoItems();
+  refrescarInsumos();
   document.querySelectorAll('.atajo').forEach(a => a.classList.remove('activo'));
 }
 // Valida y guarda el egreso; misma lógica local → sync → toast
 function guardarEgreso(){
-  const monto = parseFloat(document.getElementById('e-monto').value);
   const concepto = document.getElementById('e-concepto').value.trim();
   if (!concepto){ toast('Escribe el concepto o proveedor', 'alerta'); return; }
+  // Partidas válidas: con descripción, cantidad y precio
+  const items = egresoItems
+    .map(it => ({
+      descripcion: (it.descripcion || '').trim(),
+      cantidad: +(it.cantidad || 0),
+      unidad: (it.unidad || '').trim(),
+      precioUnit: +(it.precioUnit || 0),
+      subtotal: +((it.cantidad || 0) * (it.precioUnit || 0)).toFixed(2)
+    }))
+    .filter(it => it.descripcion && it.cantidad > 0 && it.precioUnit > 0);
+  if (egresoItems.length && !items.length){
+    toast('Las partidas necesitan descripción, cantidad y precio', 'alerta'); return;
+  }
+  const monto = items.length
+    ? +items.reduce((s,it) => s + it.subtotal, 0).toFixed(2)
+    : parseFloat(document.getElementById('e-monto').value);
   if (!(monto > 0)){ toast('Captura un monto válido mayor a cero', 'alerta'); return; }
   const fecha = document.getElementById('e-fecha').value || hoyISO();
   const egreso = {
@@ -2820,6 +2988,7 @@ function guardarEgreso(){
     semana: semanaDesdeInicio(fecha),
     categoria: document.getElementById('e-categoria').value,
     concepto,
+    items,
     monto: +monto.toFixed(2),
     pago: document.getElementById('e-pago').value,
     factura: togFactura.classList.contains('on'),
@@ -2886,7 +3055,10 @@ function renderHistorial(){
       '<td>' + esc((r.items||[]).map(i => i.cantidad + '× ' + i.nombre).join(', ')) + '</td><td>' + esc(r.pago) + '</td>' +
       '<td class="num">' + money(r.total) + '</td><td>' + sinc(r) + '</td><td>' + accion(r) + '</td></tr>'
     : '<tr><td class="mono">' + fechaBonita(r.fecha) + '</td><td>' + r.dia + '</td><td><span class="chip">' + esc(r.categoria) + '</span></td>' +
-      '<td>' + esc(r.concepto) + '</td><td class="num">' + money(r.monto) + '</td><td>' + (r.factura ? '🧾 Sí' : '—') + '</td>' +
+      '<td>' + esc(r.concepto) +
+        ((r.items || []).length ? '<div style="font-size:12px; color:var(--texto-suave)">' +
+          esc(r.items.map(i => i.cantidad + (i.unidad ? ' ' + i.unidad : '') + ' ' + i.descripcion).join(' · ')) + '</div>' : '') +
+      '</td><td class="num">' + money(r.monto) + '</td><td>' + (r.factura ? '🧾 Sí' : '—') + '</td>' +
       '<td>' + sinc(r) + '</td><td>' + accion(r) + '</td></tr>'
   ).join('') : '<tr><td colspan="8" class="vacio-msg">Sin registros con esos filtros</td></tr>';
 
@@ -2980,7 +3152,9 @@ function filasVentas(){
 function filasEgresos(){
   return egresosExport().map(e => ({
     ID: e.id, Fecha: e.fecha, 'Día': e.dia, Semana: e.semana, 'Categoría': e.categoria,
-    Concepto: e.concepto, Monto: e.monto, 'Forma de Pago': e.pago,
+    Concepto: e.concepto,
+    'Partidas': (e.items || []).map(i => i.cantidad + (i.unidad ? ' ' + i.unidad : '') + ' ' + i.descripcion + ' @' + i.precioUnit).join(' | '),
+    Monto: e.monto, 'Forma de Pago': e.pago,
     Factura: e.factura ? 'Sí' : 'No', Notas: e.notas, Timestamp: new Date(e.ts).toLocaleString('es-MX')
   }));
 }
@@ -3061,6 +3235,11 @@ function renderConfig(){
   document.getElementById('cfg-meta-semana').value = cfg.metaVentasSem || '';
   document.getElementById('cfg-ultima-sync').textContent = cfg.ultimaSync
     ? 'Última sync: ' + new Date(cfg.ultimaSync).toLocaleString('es-MX') : 'Nunca se ha sincronizado';
+  const hist = DB.get('frida_hist_cargado', 0);
+  document.getElementById('cfg-lecturas').textContent =
+    'Sincronización en vivo: últimos ' + DIAS_SYNC_VIVO + ' días · ' +
+    (hist ? 'histórico descargado el ' + new Date(hist).toLocaleDateString('es-MX') : 'histórico aún no descargado') +
+    ' · caché local: ' + (persistenciaOk === null ? 'sin determinar' : (persistenciaOk ? 'activa' : 'NO disponible, cada recarga consume cuota'));
   // Días de operación
   document.getElementById('cfg-dias').innerHTML = ['Jueves','Viernes','Sábado','Domingo','Lunes','Martes','Miércoles']
     .map(d => '<label><input type="checkbox" value="' + d + '"' + (cfg.diasOperacion.includes(d) ? ' checked' : '') + '> ' + d + '</label>').join('');
@@ -3102,6 +3281,14 @@ document.getElementById('btn-probar').addEventListener('click', async () => {
   }
 });
 document.getElementById('btn-sync-todo').addEventListener('click', sincronizarTodo);
+document.getElementById('btn-rehist').addEventListener('click', async () => {
+  const ok = await confirmar('¿Volver a descargar el histórico?',
+    'Traerá de nuevo todos los registros anteriores a los últimos ' + DIAS_SYNC_VIVO +
+    ' días. Consume cuota de lectura, así que hazlo solo si notas que falta información antigua.');
+  if (!ok) return;
+  await cargarHistoricoUnaVez(true);
+  renderConfig();
+});
 
 /* ---------- Bloque 2: Catálogo de platillos ---------- */
 // Tabla editable inline del catálogo, ordenada por categoría
@@ -4183,6 +4370,7 @@ function iniciarApp(){
   if (avisoP) avisoP.style.display = puedeEditarPrecios() ? 'none' : '';
   limpiarComanda();
   limpiarEgreso();
+  renderEgresoItems();
   actualizarBadgeSync();
   irA(usuarioActual.rol === 'mesero' ? 'mesas' : 'dashboard');
   burbuja('¡Hola' + (usuarioActual ? ', ' + usuarioActual.nombre : '') + '! Soy tu asistente de análisis. Pregúntame por tu margen, tu mejor día o usa los botones de arriba. 🌮', 'bot');
