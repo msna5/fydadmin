@@ -297,6 +297,10 @@ td.num, th.num{ text-align:right; font-family:var(--f-mono); }
 .acciones-form{ display:flex; gap:12px; margin-top:16px; flex-wrap:wrap; }
 .campo{ margin-bottom:14px; }
 
+/* Celdas de la comanda bloqueadas para el personal operativo */
+.celda-fija{ color:var(--texto); font-weight:500; padding:10px; }
+.celda-fija.mono{ color:var(--azul); }
+
 /* ============================================================
    SECCIÓN 7 · EGRESOS
    ============================================================ */
@@ -400,11 +404,17 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
 .toast.saliendo{ opacity:0; transform:translateX(40px); transition:all .3s; }
 
 /* ---------- Modal ---------- */
-#modal-fondo{
+#modal-fondo, .modal-fondo-base{
   position:fixed; inset:0; z-index:250; background:rgba(12,17,72,.45); backdrop-filter:blur(2px);
   display:none; align-items:center; justify-content:center; padding:20px;
 }
-#modal-fondo.visible{ display:flex; }
+#modal-fondo.visible, .modal-fondo-base.visible{ display:flex; }
+#mp-caja{
+  background:var(--blanco); border-radius:var(--radio); padding:var(--e4); max-width:720px; width:100%;
+  max-height:90vh; overflow-y:auto; border:1px solid var(--gris-claro);
+  box-shadow:0 12px 40px rgba(12,17,72,.22); animation:entrada .3s ease both;
+}
+#mp-caja h3{ margin-bottom:var(--e3); }
 #modal-caja{
   background:var(--blanco); border-radius:var(--radio); padding:var(--e4); max-width:460px; width:100%;
   border:1px solid var(--gris-claro); box-shadow:0 12px 40px rgba(12,17,72,.22);
@@ -462,6 +472,69 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
 #comanda-mesa-banner button:hover{ background:rgba(255,255,255,.3); }
 
 /* ============================================================
+   MENU: catalogo con grupos de opciones
+   ============================================================ */
+.menu-barra{ display:flex; gap:var(--e1); flex-wrap:wrap; align-items:center; margin-bottom:var(--e2); }
+.menu-barra input[type="search"]{ flex:1; min-width:180px; }
+.menu-chips{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:var(--e2); }
+.chip-f{
+  border:1px solid var(--gris-claro); background:var(--blanco); color:var(--gris-osc);
+  border-radius:20px; padding:8px 15px; font-size:13px; font-weight:600; min-height:38px;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.chip-f:hover{ border-color:var(--azul); color:var(--azul); }
+.chip-f.on{ background:var(--azul); color:var(--blanco); border-color:var(--azul); }
+.chip-f.sub{ border-radius:var(--radio-btn); font-size:12.5px; padding:6px 12px; min-height:32px; }
+.chip-f.sub.on{ background:var(--rosa-osc); border-color:var(--rosa-osc); }
+.menu-info{ font-size:13px; color:var(--gris-osc); font-family:var(--f-mono); margin-bottom:var(--e1); }
+
+.badge-pend{
+  display:inline-block; background:#FFF3D6; color:var(--alerta); border:1px solid #EDD9A3;
+  border-radius:10px; padding:1px 8px; font-size:11px; font-weight:700; margin-left:6px;
+}
+.badge-grupos{
+  display:inline-block; background:var(--azul-clar); color:var(--azul);
+  border-radius:10px; padding:1px 8px; font-size:11.5px; font-weight:600; font-family:var(--f-mono);
+}
+.margen-ok{ color:var(--exito); font-weight:600; }
+.margen-bajo{ color:var(--alerta); font-weight:600; }
+.margen-mal{ color:var(--peligro); font-weight:600; }
+.margen-na{ color:var(--texto-suave); }
+tr.prod-inactivo{ opacity:.5; }
+
+/* Grupos de opciones */
+.grupo-card{ border:1px solid var(--gris-claro); border-radius:var(--radio); margin-bottom:var(--e2); background:var(--blanco); }
+.grupo-head{
+  display:flex; align-items:center; gap:var(--e1); padding:var(--e2); cursor:pointer;
+  border-bottom:1px solid transparent;
+}
+.grupo-head:hover{ background:var(--azul-clar); }
+.grupo-card.abierto .grupo-head{ border-bottom-color:var(--gris-claro); }
+.grupo-head b{ font-family:var(--f-titulo); font-size:17px; color:var(--azul); }
+.grupo-head .meta{ font-size:12.5px; color:var(--gris-osc); }
+.grupo-head .acciones{ margin-left:auto; display:flex; gap:6px; }
+.grupo-body{ display:none; padding:var(--e2); }
+.grupo-card.abierto .grupo-body{ display:block; }
+.opcion-fila{ display:flex; gap:var(--e1); align-items:center; margin-bottom:6px; flex-wrap:wrap; }
+.opcion-fila input[type="text"]{ flex:1; min-width:150px; }
+.opcion-fila input[type="number"]{ width:110px; }
+.opcion-fila .etq{ font-size:11px; color:var(--gris-osc); font-weight:600; }
+
+/* Modal ancho para editar producto */
+#modal-caja.ancho{ max-width:680px; }
+.form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--e2); }
+.form-grid .ancho2{ grid-column:1 / -1; }
+.grupos-check{ display:flex; flex-direction:column; gap:6px; max-height:230px; overflow-y:auto;
+  border:1px solid var(--gris-claro); border-radius:var(--radio-btn); padding:var(--e1); }
+.grupos-check label{
+  display:flex; align-items:center; gap:9px; text-transform:none; letter-spacing:0;
+  font-size:14px; font-weight:500; margin:0; padding:7px 9px; border-radius:var(--radio-btn); cursor:pointer;
+}
+.grupos-check label:hover{ background:var(--azul-clar); }
+.grupos-check input{ width:auto; accent-color:var(--azul); }
+.grupos-check .g-meta{ margin-left:auto; font-size:11.5px; color:var(--gris-osc); }
+
+/* ============================================================
    RESPONSIVE
    ============================================================ */
 @media (max-width: 980px){
@@ -482,6 +555,7 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
   .nav-tab{ width:100%; justify-content:flex-start; padding:12px 14px; font-size:15px; }
   .nav-usuario{ display:none; }
   main{ padding:86px var(--e2) 50px; }
+  .form-grid{ grid-template-columns:1fr; }
   #pantalla-login::before, #pantalla-login::after{ width:32px; background-size:32px 32px; }
   #kpis{ grid-template-columns:1fr 1fr; gap:10px; }
   .kpi .valor{ font-size:19px; }
@@ -700,6 +774,7 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
             </table>
           </div>
           <button class="btn btn-outline btn-sm" id="btn-linea-blanco" style="margin-top:12px">+ Agregar artículo</button>
+          <p id="aviso-precios" style="display:none; margin-top:12px; font-size:13px; color:var(--gris-osc)">🔒 Los precios los fija el menú · para cambiarlos se necesita un administrador</p>
           <div class="total-grande">
             <span class="txt">Total</span>
             <span class="cifra" id="c-total">$0.00</span>
@@ -723,6 +798,61 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
         <span style="margin-left:auto" class="mono" id="mesas-resumen"></span>
       </div>
       <div id="grid-mesas"></div>
+    </section>
+
+    <!-- ============================================================
+         MENÚ · catálogo con grupos de opciones
+         ============================================================ -->
+    <section class="vista" id="vista-menu">
+      <h2 class="vista-titulo">Menú</h2>
+      <p class="vista-sub">Categorías, productos y sus opciones · precio y costo de producción</p>
+
+      <div class="subtabs" id="menu-subtabs">
+        <button data-mt="productos" class="activo">Productos</button>
+        <button data-mt="grupos">Grupos de opciones</button>
+      </div>
+
+      <!-- Productos -->
+      <div id="menu-productos">
+        <div class="card">
+          <div class="menu-barra">
+            <input type="search" id="mn-buscar" placeholder="Buscar producto…" autocomplete="off">
+            <button class="btn btn-outline btn-sm" id="mn-nuevo">+ Producto</button>
+            <button class="btn btn-rosa btn-sm" id="mn-semilla">📖 Cargar menú base</button>
+            <button class="btn btn-azul btn-sm" id="mn-guardar">Guardar menú</button>
+            <span id="mn-msg"></span>
+          </div>
+          <div class="menu-chips" id="mn-cats"></div>
+          <div class="menu-chips" id="mn-subs"></div>
+          <div class="menu-info" id="mn-info"></div>
+          <div class="tabla-scroll">
+            <table>
+              <thead><tr>
+                <th>Producto</th>
+                <th style="width:150px">Subcategoría</th>
+                <th class="num" style="width:100px">Precio</th>
+                <th class="num" style="width:100px">Costo</th>
+                <th class="num" style="width:90px">Margen</th>
+                <th style="width:110px">Opciones</th>
+                <th style="width:120px">Acciones</th>
+              </tr></thead>
+              <tbody id="mn-tabla"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grupos de opciones -->
+      <div id="menu-grupos" style="display:none">
+        <div class="card" style="margin-bottom:var(--e2)">
+          <div class="menu-barra" style="margin:0">
+            <button class="btn btn-outline btn-sm" id="mg-nuevo">+ Grupo de opciones</button>
+            <button class="btn btn-azul btn-sm" id="mg-guardar">Guardar menú</button>
+            <span id="mg-msg"></span>
+          </div>
+        </div>
+        <div id="mg-lista"></div>
+      </div>
     </section>
 
     <!-- ============================================================
@@ -1031,6 +1161,40 @@ details.bloque .cuerpo{ padding:var(--e1) var(--e3) var(--e3); border-top:1px so
 
 <!-- Toasts y modal -->
 <div id="toasts"></div>
+<!-- Editor de producto del menú -->
+<div id="mp-fondo" class="modal-fondo-base">
+  <div id="mp-caja">
+    <h3 id="mp-titulo">Producto</h3>
+    <div class="form-grid">
+      <div class="campo ancho2"><label for="mp-nombre">Nombre del producto</label><input type="text" id="mp-nombre" placeholder="Ej. Huarache"></div>
+      <div class="campo"><label for="mp-cat">Categoría</label><select id="mp-cat"></select></div>
+      <div class="campo"><label for="mp-sub">Subcategoría</label><select id="mp-sub"></select></div>
+      <div class="campo"><label for="mp-precio">Precio de venta ($)</label><input type="number" id="mp-precio" min="0" step="0.5" placeholder="0.00"></div>
+      <div class="campo"><label for="mp-costo">Costo de producción ($)</label><input type="number" id="mp-costo" min="0" step="0.5" placeholder="0.00"></div>
+      <div class="campo ancho2">
+        <label>Margen estimado</label>
+        <div id="mp-margen" class="mono" style="font-size:16px; padding:6px 0">—</div>
+      </div>
+      <div class="campo">
+        <label>Disponible</label>
+        <div class="toggle" id="mp-activo" role="switch" tabindex="0"><span class="pista"></span><span class="estado">Activo</span></div>
+      </div>
+      <div class="campo">
+        <label>Pendiente de validación</label>
+        <div class="toggle" id="mp-pend" role="switch" tabindex="0"><span class="pista"></span><span class="estado">No</span></div>
+      </div>
+      <div class="campo ancho2"><label for="mp-nota">Nota operativa (qué falta confirmar con cocina)</label><textarea id="mp-nota" rows="2"></textarea></div>
+      <div class="campo ancho2">
+        <label>Grupos de opciones que aplican</label>
+        <div class="grupos-check" id="mp-grupos"></div>
+      </div>
+    </div>
+    <div class="acciones-form">
+      <button class="btn btn-outline btn-sm" id="mp-cancelar">Cancelar</button>
+      <button class="btn btn-azul btn-sm" id="mp-ok">Guardar producto</button>
+    </div>
+  </div>
+</div>
 <div id="modal-fondo">
   <div id="modal-caja">
     <h3 id="modal-titulo"></h3>
@@ -1055,7 +1219,8 @@ const LS = {
   egresos:    'frida_egresos',
   platillos:  'frida_platillos',
   config:     'frida_config',
-  pendientes: 'frida_pendientes'
+  pendientes: 'frida_pendientes',
+  menu:       'frida_menu'
 };
 
 // Menú oficial con precios (extraído de lacasadefridaydiego.com.mx/#menu)
@@ -1102,6 +1267,185 @@ const CATALOGO_INICIAL = [
   ['Bebida','Sangría / Squirt / Mineral preparada',45],
   ['Extra','Queso / campechano adicional',5]
 ];
+
+
+/* ============================================================
+   MENÚ ESTRUCTURADO · categoría › subcategoría › producto › opciones
+   Semilla tomada de "Propuesta_Menu_Frida_Diego_Sin_Precios.docx".
+   Regla del documento: lo que la evidencia no acredita se marca como
+   PENDIENTE DE VALIDACIÓN; no se inventan recetas ni precios.
+   ============================================================ */
+const CATEGORIAS_MENU = ['Platillos','Bebidas','Postres','Otros/adicionales'];
+
+/* Subcategorías agrupadas según el peso real de cada familia en el histórico
+   (1,667 ventas · 7,459 unidades · dic-2025 a nov-2026). Los antojitos
+   concentran el 74.6% de las unidades, así que viven juntos y ordenados
+   por volumen; las bebidas se consolidaron de 11 grupos a 4. */
+const SUBCATEGORIAS = {
+  'Platillos': ['Antojitos','Platos fuertes'],
+  'Bebidas': ['Café, té y chocolate','Embotellados','Aguas frescas','Preparadas y frías'],
+  'Postres': ['Postres'],
+  'Otros/adicionales': ['Adicionales']
+};
+
+/* Grupos de opciones: [id, nombre, tipo, obligatorio, [[opción, precioExtra], …]]
+   Los precios extra salen de la estructura real de cobro observada:
+   base por familia + escalón de relleno (sencillo / guisado / carne) + queso. */
+const GRUPOS_SEMILLA = [
+  ['g-rell-quesadilla','Relleno · Quesadilla','unica',true,[
+    ['Queso',0],['Chicharrón',0],['Tinga de pollo',0],['Suadero',5],['Tinga de res',0],
+    ['Champiñones',0],['Bistec',5],['Flor de calabaza',0],['Longaniza',5],['Campechana',5],
+    ['Papa',0],['Picadillo',0],['Pollo',0],['Huitlacoche',0]]],
+  ['g-rell-gordita','Relleno · Gordita','unica',true,[
+    ['Suadero',5],['Chicharrón',0],['Bistec',5],['Tinga de pollo',0],['Tinga de res',0],
+    ['Campechana',5],['Queso',0],['Longaniza',5],['Champiñones',0],['Flor de calabaza',0],
+    ['Papa',0],['Picadillo',0],['Pollo',0]]],
+  ['g-rell-pambazo','Relleno · Pambazo','unica',true,[
+    ['Sencillo',0],['Tinga de pollo',7],['Suadero',12],['Tinga de res',7],['Bistec',12],
+    ['Queso',7],['Chicharrón',7],['Longaniza',12],['Campechano',12],['Champiñones',7],['Papa',7]]],
+  ['g-rell-sope','Relleno · Sope','unica',true,[
+    ['Suadero',12],['Bistec',12],['Sencillo',0],['Tinga de pollo',7],['Campechano',12],
+    ['Queso',7],['Longaniza',12],['Chicharrón',7],['Tinga de res',7],['Champiñones',7]]],
+  ['g-rell-huarache','Relleno · Huarache','unica',true,[
+    ['Suadero',35],['Bistec',35],['Sencillo',0],['Queso',10],['Tinga de pollo',10],
+    ['Tinga de res',10],['Campechano',35],['Longaniza',35],['Chicharrón',10],
+    ['Champiñones',10],['Papa',10],['Huevo',10]]],
+  ['g-rell-tostada','Relleno · Tostada','unica',true,[
+    ['Pata',0],['Tinga de pollo',0],['Tinga de res',0],['Champiñones',0],['Pollo',0],
+    ['Frijoles',0],['Picadillo',0],['Bistec',0],['Flor de calabaza',0]]],
+  ['g-rell-taco','Relleno · Taco','unica',true,[
+    ['Suadero',0],['Bistec',0],['Campechano',0],['Longaniza',0],['Queso',0],
+    ['Tinga de pollo',0],['Tinga de res',0],['Chicharrón',0]]],
+  ['g-rell-gringa','Relleno · Gringa','unica',true,[
+    ['Suadero',0],['Bistec',0],['Campechana',0],['Longaniza',0],['Queso',0]]],
+  ['g-queso5','Queso','unica',false,[
+    ['Sin mención',0],['Con queso',5],['Con quesillo',5],['Extra queso',5],['Sin queso',0]]],
+  ['g-queso10','Queso (huarache)','unica',false,[
+    ['Sin mención',0],['Con queso',10],['Con quesillo',10],['Sin queso',0]]],
+  ['g-salsa','Salsa','unica',true,[['Roja',0],['Verde',0]]],
+  ['g-tortilla','Tortilla','unica',false,[['Maíz',0],['Harina',0]]],
+  ['g-carne-pozole','Carne del pozole','unica',true,[['Maciza',0],['Pollo',0],['Surtido',0]]],
+  ['g-tam-pozole','Tamaño','unica',true,[['Chico',0],['Grande',25]]],
+  ['g-proteina','Proteína','unica',true,[['Pollo',0],['Bistec',0],['Suadero',0]]],
+  ['g-sabor-agua','Sabor','unica',true,[
+    ['Fresa',0],['Limón',0],['Melón',0],['Mango',0],['Piña',0],['Avena',0],
+    ['Fresa con hierbabuena',0],['Pepino',0],['Pepino con limón',0],['Piña con limón',0]]],
+  ['g-tam-agua','Tamaño','unica',true,[['Chico',0],['Medio',0],['Litro',25],['Grande',25]]],
+  ['g-sabor-frappe','Sabor','unica',true,[
+    ['Chocolate',0],['Moka',0],['Oreo',0],['Mazapán',0],['Nutella',0],['Fresa',0],['Capuchino',0]]],
+  ['g-crema','Crema batida','unica',false,[['Sin crema',0],['Con crema batida',10]]],
+  ['g-sabor-malteada','Sabor','unica',true,[['Chocolate',0],['Fresa',0],['Café',0],['Moka',0]]],
+  ['g-sabor-smoothie','Sabor','unica',true,[['Frutos rojos',0],['Mango',0]]],
+  ['g-sabor-te','Sabor','unica',true,[['Frutas',0],['Durazno',0],['Manzanilla',0],['Negro',0],['Verde',0]]],
+  ['g-sabor-jarrito','Sabor','unica',true,[
+    ['Tamarindo',0],['Piña',0],['Mandarina',0],['Limón',0],['Uva',0],['Rojo',0],['Tutifruti',0]]],
+  ['g-sabor-boing','Sabor','unica',true,[['Mango',0],['Guayaba',0],['Manzana',0],['Fresa',0]]],
+  ['g-sabor-valle','Sabor','unica',true,[['Mango',0],['Durazno',0]]],
+  ['g-marca-refresco','Marca','unica',true,[
+    ['Sidral Mundet',0],['Fanta',0],['Fresca',0],['Sprite',0],['Squirt',0],['AGA',0],['Manzanita',0]]],
+  ['g-tipo-agua','Tipo','unica',true,[['Natural',0],['Mineral',0]]],
+  ['g-sabor-cheese','Sabor','unica',true,[['Oreo',0],['Zarzamora',0],['Sin sabor indicado',0]]],
+  ['g-present','Presentación','unica',false,[['Rebanada',0],['Completo',0]]],
+  ['g-tam-muffin','Variante','unica',false,[['Mini',0],['Grande',20],['Chispas de chocolate',20]]]
+];
+
+/* Productos: [categoría, subcategoría, nombre, precioBase, unidadesHistóricas, [grupos], nota]
+   El precio base corresponde al escalón más barato observado en el histórico
+   reciente; los escalones superiores viven en el grupo de relleno. */
+const PRODUCTOS_SEMILLA = [
+  ['Platillos','Antojitos','Quesadilla',30,1315,['g-rell-quesadilla','g-queso5','g-tortilla'],'Confirmar si el queso va incluido en la receta base'],
+  ['Platillos','Antojitos','Gordita',30,928,['g-rell-gordita','g-queso5'],''],
+  ['Platillos','Antojitos','Pambazo',33,881,['g-rell-pambazo','g-queso5'],'Receta del pambazo sencillo pendiente de confirmar'],
+  ['Platillos','Antojitos','Tostada',30,757,['g-rell-tostada','g-queso5'],'Definir crema, lechuga, queso, salsa y frijoles de la receta'],
+  ['Platillos','Antojitos','Taco',35,700,['g-rell-taco','g-queso5','g-tortilla'],''],
+  ['Platillos','Antojitos','Huarache',35,625,['g-rell-huarache','g-queso10'],'Receta del huarache sencillo pendiente de confirmar'],
+  ['Platillos','Antojitos','Sope',33,365,['g-rell-sope','g-queso5'],''],
+  ['Platillos','Antojitos','Gringa',60,164,['g-rell-gringa','g-queso5'],'Confirmar si el queso y la tortilla de harina van incluidos'],
+  ['Platillos','Platos fuertes','Pozole',90,74,['g-carne-pozole','g-tam-pozole','g-salsa'],'Definir carnes del surtido, volumen de cada tamaño y guarniciones'],
+  ['Platillos','Platos fuertes','Chilaquiles',90,17,['g-salsa','g-proteina'],'No consta rojo con suadero; definir porción y opción sin proteína'],
+  ['Platillos','Platos fuertes','Torta',45,12,['g-rell-taco','g-queso5'],'Baja rotación · tipo de pan y acompañamientos sin documentar'],
+  ['Platillos','Platos fuertes','Enchiladas',90,10,['g-salsa','g-proteina'],'Baja rotación · definir número de piezas y guarniciones'],
+  ['Platillos','Platos fuertes','Enfrijoladas',95,1,[],'Baja rotación · confirmar vigencia, relleno y guarniciones'],
+  ['Platillos','Platos fuertes','Flautas de pollo',55,1,[],'Baja rotación · confirmar vigencia y piezas por orden'],
+  ['Platillos','Platos fuertes','Plato de picadillo',0,1,[],'Baja rotación · sin precio ni composición documentada'],
+  ['Bebidas','Embotellados','Coca-Cola',30,208,[],''],
+  ['Bebidas','Embotellados','Jarritos',27,165,['g-sabor-jarrito'],'"Rojo" no identifica sabor comercial; confirmar tutifruti'],
+  ['Bebidas','Embotellados','Boing',27,100,['g-sabor-boing'],'Capacidades no registradas'],
+  ['Bebidas','Embotellados','Del Valle',30,37,['g-sabor-valle'],'Confirmar línea comercial y presentación'],
+  ['Bebidas','Embotellados','Otro refresco',30,33,['g-marca-refresco'],'Confirmar sabores y volúmenes por marca'],
+  ['Bebidas','Embotellados','Agua embotellada',15,20,['g-tipo-agua'],'Marca y capacidad sin indicar'],
+  ['Bebidas','Café, té y chocolate','Café americano',27,113,[],'Tamaño y carga de café sin especificar'],
+  ['Bebidas','Café, té y chocolate','Chocolate Abuelita',50,113,[],'Volumen y tipo de leche sin definir'],
+  ['Bebidas','Café, té y chocolate','Café lechero',45,110,[],'Tipo y cantidad de leche pendientes'],
+  ['Bebidas','Café, té y chocolate','Té',27,41,['g-sabor-te'],''],
+  ['Bebidas','Café, té y chocolate','Capuchino',50,31,[],''],
+  ['Bebidas','Café, té y chocolate','Café moka',50,10,[],'No confundir con frappé ni malteada de moka'],
+  ['Bebidas','Café, té y chocolate','Chocolate frío',50,0,[],'No asumir que es Abuelita ni una malteada'],
+  ['Bebidas','Aguas frescas','Agua fresca',35,103,['g-sabor-agua','g-tam-agua'],'Confirmar capacidad de chico, medio, litro y grande'],
+  ['Bebidas','Preparadas y frías','Sangría preparada',45,61,[],'Definir receta y presencia o ausencia de alcohol'],
+  ['Bebidas','Preparadas y frías','Limonada',40,39,[],'No indica agua natural o mineral, tamaño ni endulzante'],
+  ['Bebidas','Preparadas y frías','Malteada',50,37,['g-sabor-malteada'],''],
+  ['Bebidas','Preparadas y frías','Frappé',60,33,['g-sabor-frappe','g-crema'],'Confirmar si crema y crema batida son el mismo insumo'],
+  ['Bebidas','Preparadas y frías','Mineral preparado',45,19,[],'Complementos no documentados'],
+  ['Bebidas','Preparadas y frías','Smoothie',70,8,['g-sabor-smoothie'],''],
+  ['Bebidas','Preparadas y frías','Squirt preparado',45,4,[],'Separar del refresco Squirt embotellado'],
+  ['Postres','Postres','Muffin',15,79,['g-tam-muffin'],'No asumir que todos llevan chocolate'],
+  ['Postres','Postres','Orden de donas',20,72,[],'Confirmar si dona y donita son el mismo producto; piezas por orden'],
+  ['Postres','Postres','Cheesecake',45,42,['g-sabor-cheese','g-present'],''],
+  ['Postres','Postres','Flan napolitano',45,41,['g-present'],'Peso de porción no indicado'],
+  ['Postres','Postres','Pay de limón',45,30,['g-present'],''],
+  ['Postres','Postres','Buñuelos',25,25,[],'Piezas por orden, tamaño y miel sin especificar'],
+  ['Otros/adicionales','Adicionales','Queso',5,0,[],'Confirmar porción y equivalencia con quesillo'],
+  ['Otros/adicionales','Adicionales','Quesillo',5,0,[],'Confirmar si usa el mismo insumo que el queso'],
+  ['Otros/adicionales','Adicionales','Crema batida',10,0,[],'Confirmar porción'],
+  ['Otros/adicionales','Adicionales','Tortilla de masa',5,2,[],'Confirmar si se vende por pieza o por orden'],
+  ['Otros/adicionales','Adicionales','Extra pollo',0,1,[],'Definir si es porción adicional o receta especial'],
+  ['Otros/adicionales','Adicionales','Chicharrón extra',0,2,[],'Definir si es porción adicional o receta especial']
+];
+
+// Lee el menú estructurado del almacenamiento local
+function getMenu(){
+  const m = DB.get(LS.menu, null);
+  if (m && Array.isArray(m.productos)) return m;
+  return { grupos: [], productos: [], ts: 0 };
+}
+// Guarda el menú marcando la hora del cambio (resuelve conflictos entre dispositivos)
+function setMenu(m){ m.ts = Date.now(); DB.set(LS.menu, m); }
+
+// Construye el menú base a partir de la semilla del documento
+function construirMenuSemilla(){
+  const grupos = GRUPOS_SEMILLA.map(([id, nombre, tipo, obligatorio, opciones]) => ({
+    id, nombre, tipo, obligatorio,
+    opciones: opciones.map(o => ({
+      id: uuid(),
+      nombre: Array.isArray(o) ? o[0] : o,
+      precioExtra: Array.isArray(o) ? (o[1] || 0) : 0,
+      costoExtra: 0, activo: true
+    }))
+  }));
+  const productos = PRODUCTOS_SEMILLA.map(([categoria, subcategoria, nombre, precio, pop, gs, nota]) => ({
+    id: uuid(), nombre, categoria, subcategoria,
+    precio: precio || 0, costo: 0, activo: true,
+    popularidad: pop || 0,
+    pendiente: !!nota, nota: nota || '',
+    grupos: gs.slice()
+  }));
+  return { grupos, productos, ts: Date.now() };
+}
+
+// Margen de un producto a partir de su precio y su costo de producción
+function margenProducto(p){
+  if (!p.precio || p.precio <= 0) return null;
+  if (!p.costo || p.costo <= 0) return null;
+  return (p.precio - p.costo) / p.precio * 100;
+}
+// Color del margen: en restaurante un margen sano ronda 65-70%
+function claseMargen(m){
+  if (m === null) return 'margen-na';
+  if (m >= 65) return 'margen-ok';
+  if (m >= 50) return 'margen-bajo';
+  return 'margen-mal';
+}
 
 const DIAS_SEMANA = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const CATEGORIAS_PLATILLO = ['Plato fuerte','Antojito','Bebida','Postre','Extra'];
@@ -1187,6 +1531,15 @@ function escucharNube(){
       DB.set(LS.platillos, rp.lista);
       DB.set('frida_platillos_ts', Number(rp.ts));
       if (vistaActual === 'config') renderConfig();
+    }
+  }, () => {});
+  fdb.collection('estado').doc('menu').onSnapshot(d => {
+    const rm = d.data();
+    if (rm && Array.isArray(rm.productos) && Number(rm.ts || 0) > (Number(getMenu().ts) || 0)){
+      DB.set(LS.menu, rm);
+      // No pisa una edición en curso con cambios sin guardar
+      if (vistaActual === 'menu' && !mnSinGuardar){ cargarMenuEdit(); renderMenu(); }
+      else if (vistaActual === 'menu') toast('Otro dispositivo actualizó el menú · guarda o recarga para verlo', 'alerta');
     }
   }, () => {});
   if (!esAdminRol) return;   // hasta aquí llega el mesero
@@ -1550,8 +1903,9 @@ document.getElementById('btn-salir').addEventListener('click', cerrarSesion);
    ============================================================ */
 const TABS = {
   admin: [
-    ['dashboard','📊','Dashboard'], ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'], ['egresos','💸','Egresos'],
-    ['historial','📋','Historial'], ['exportar','⬇','Exportar'], ['config','⚙','Config'], ['ia','🤖','IA']
+    ['dashboard','📊','Dashboard'], ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'], ['menu','📖','Menú'],
+    ['egresos','💸','Egresos'], ['historial','📋','Historial'], ['exportar','⬇','Exportar'],
+    ['config','⚙','Config'], ['ia','🤖','IA']
   ],
   mesero: [ ['mesas','🍽','Mesas'], ['comanda','📝','Comanda'] ]
 };
@@ -1579,6 +1933,7 @@ function irA(id){
   document.getElementById('vista-' + id).classList.add('activa');
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.toggle('activa', t.dataset.vista === id));
   if (id === 'mesas'){ renderMesas(); pullMesas(); }
+  if (id === 'menu')      renderMenu();
   if (id === 'dashboard') renderDashboard();
   if (id === 'historial') renderHistorial();
   if (id === 'exportar')  renderResumenExport();
@@ -1863,21 +2218,34 @@ document.getElementById('selector-periodo').addEventListener('click', e => {
    ============================================================ */
 let comandaItems = [];   // filas de la comanda en edición
 
+// Solo el administrador puede alterar precios y nombres en la comanda.
+// El personal operativo cobra lo que marca el menú.
+function puedeEditarPrecios(){ return !!(usuarioActual && usuarioActual.rol === 'admin'); }
+
 // Renderiza la tabla de artículos de la comanda con subtotales en vivo
 function renderItems(){
   const body = document.getElementById('items-body');
   if (!comandaItems.length){
-    body.innerHTML = '<tr><td colspan="5" class="vacio-msg">Busca un platillo arriba o agrega un artículo</td></tr>';
+    body.innerHTML = '<tr><td colspan="5" class="vacio-msg">' +
+      (puedeEditarPrecios() ? 'Busca un platillo arriba o agrega un artículo'
+                            : 'Busca un platillo del menú para agregarlo') + '</td></tr>';
   } else {
+    const editable = puedeEditarPrecios();
     body.innerHTML = comandaItems.map((it, i) => {
       const sub = (it.cantidad || 0) * (it.precioUnit || 0);
-      return '<tr>' +
-        '<td><input type="text" value="' + esc(it.nombre) + '" data-i="' + i + '" data-campo="nombre" placeholder="Nombre del artículo"></td>' +
+      // El nombre y el precio solo son campos editables para el administrador
+      const celdaNombre = editable
+        ? '<td><input type="text" value="' + esc(it.nombre) + '" data-i="' + i + '" data-campo="nombre" placeholder="Nombre del artículo"></td>'
+        : '<td class="celda-fija">' + esc(it.nombre) + '</td>';
+      const celdaPrecio = editable
+        ? '<td><input type="number" min="0" step="0.5" value="' + it.precioUnit + '" data-i="' + i + '" data-campo="precioUnit"></td>'
+        : '<td class="celda-fija mono" title="Precio fijado en el menú">' + money(it.precioUnit) + '</td>';
+      return '<tr>' + celdaNombre +
         '<td><div class="qty">' +
           '<button type="button" data-i="' + i + '" data-op="-">−</button>' +
           '<input type="number" min="1" value="' + it.cantidad + '" data-i="' + i + '" data-campo="cantidad">' +
           '<button type="button" data-i="' + i + '" data-op="+">+</button></div></td>' +
-        '<td><input type="number" min="0" step="0.5" value="' + it.precioUnit + '" data-i="' + i + '" data-campo="precioUnit"></td>' +
+        celdaPrecio +
         '<td class="num mono">' + money(sub) + '</td>' +
         '<td><button type="button" class="btn-x" data-i="' + i + '" data-op="x" title="Eliminar">×</button></td></tr>';
     }).join('');
@@ -1888,9 +2256,10 @@ function renderItems(){
 // Delegación de eventos de la tabla de artículos (editar, ±, eliminar)
 document.getElementById('items-body').addEventListener('input', e => {
   const t = e.target, i = +t.dataset.i;
-  if (t.dataset.campo === 'nombre') comandaItems[i].nombre = t.value;
+  // La cantidad la ajusta cualquiera; nombre y precio solo el administrador
   if (t.dataset.campo === 'cantidad') comandaItems[i].cantidad = Math.max(1, parseInt(t.value) || 1);
-  if (t.dataset.campo === 'precioUnit') comandaItems[i].precioUnit = parseFloat(t.value) || 0;
+  if (t.dataset.campo === 'nombre' && puedeEditarPrecios()) comandaItems[i].nombre = t.value;
+  if (t.dataset.campo === 'precioUnit' && puedeEditarPrecios()) comandaItems[i].precioUnit = parseFloat(t.value) || 0;
   // Solo refresca subtotales sin re-renderizar inputs (para no perder el foco)
   const fila = t.closest('tr');
   const it = comandaItems[i];
@@ -1913,7 +2282,10 @@ function agregarItem(nombre, precio){
   renderItems();
   sincronizarMesaComanda();
 }
-document.getElementById('btn-linea-blanco').addEventListener('click', () => agregarItem('', 0));
+document.getElementById('btn-linea-blanco').addEventListener('click', () => {
+  if (!puedeEditarPrecios()){ toast('Solo el administrador puede capturar artículos libres', 'alerta'); return; }
+  agregarItem('', 0);
+});
 
 /* ---------- Buscador inteligente de platillos ---------- */
 const inputBuscar = document.getElementById('c-buscar');
@@ -3030,6 +3402,360 @@ function empujarConfig(){
   postScript({ action:'saveConfig', data: compartida }).catch(() => {});
 }
 
+
+/* ============================================================
+   EDITOR DEL MENÚ · productos y grupos de opciones
+   ============================================================ */
+let menuEdit = null;            // copia de trabajo del menú
+let mnSubtab = 'productos';
+let mnCat = '', mnSub = '', mnBuscar = '';
+let mnSinGuardar = false;
+let mpEditandoId = null;        // producto abierto en el modal
+
+// Carga la copia de trabajo desde el menú guardado
+function cargarMenuEdit(){
+  const m = getMenu();
+  menuEdit = JSON.parse(JSON.stringify(m));
+  mnSinGuardar = false;
+}
+// Marca que hay cambios sin guardar y refresca el aviso
+function tocarMenu(){
+  mnSinGuardar = true;
+  const a = document.getElementById('mn-msg'), b = document.getElementById('mg-msg');
+  if (a) { a.className = 'sin-guardar'; a.textContent = '● Cambios sin guardar'; }
+  if (b) { b.className = 'sin-guardar'; b.textContent = '● Cambios sin guardar'; }
+}
+// Punto de entrada de la vista Menú
+function renderMenu(){
+  if (!menuEdit) cargarMenuEdit();
+  document.getElementById('menu-productos').style.display = mnSubtab === 'productos' ? '' : 'none';
+  document.getElementById('menu-grupos').style.display    = mnSubtab === 'grupos' ? '' : 'none';
+  if (mnSubtab === 'productos') renderMenuProductos(); else renderMenuGrupos();
+}
+// Filtros y tabla de productos
+function renderMenuProductos(){
+  // Chips de categoría
+  document.getElementById('mn-cats').innerHTML =
+    '<button class="chip-f' + (mnCat === '' ? ' on' : '') + '" data-cat="">Todas</button>' +
+    CATEGORIAS_MENU.map(ct => '<button class="chip-f' + (mnCat === ct ? ' on' : '') + '" data-cat="' + esc(ct) + '">' + esc(ct) + '</button>').join('');
+  // Chips de subcategoría (solo con una categoría elegida)
+  const subs = mnCat ? (SUBCATEGORIAS[mnCat] || []) : [];
+  document.getElementById('mn-subs').innerHTML = subs.length
+    ? '<button class="chip-f sub' + (mnSub === '' ? ' on' : '') + '" data-sub="">Todas</button>' +
+      subs.map(s => '<button class="chip-f sub' + (mnSub === s ? ' on' : '') + '" data-sub="' + esc(s) + '">' + esc(s) + '</button>').join('')
+    : '';
+
+  const q = mnBuscar.trim().toLowerCase();
+  const lista = menuEdit.productos.filter(p =>
+    (!mnCat || p.categoria === mnCat) &&
+    (!mnSub || p.subcategoria === mnSub) &&
+    (!q || p.nombre.toLowerCase().includes(q))
+  ).sort((a,b) =>
+    CATEGORIAS_MENU.indexOf(a.categoria) - CATEGORIAS_MENU.indexOf(b.categoria) ||
+    a.subcategoria.localeCompare(b.subcategoria) ||
+    (b.popularidad || 0) - (a.popularidad || 0) ||   // los más vendidos primero
+    a.nombre.localeCompare(b.nombre));
+
+  const total = menuEdit.productos.length;
+  const activos = menuEdit.productos.filter(p => p.activo).length;
+  const pend = menuEdit.productos.filter(p => p.pendiente).length;
+  const sinPrecio = menuEdit.productos.filter(p => !p.precio).length;
+  document.getElementById('mn-info').textContent = total
+    ? 'Mostrando ' + lista.length + ' de ' + total + ' productos · ' + activos + ' activos · ' +
+      pend + ' pendientes de validación · ' + sinPrecio + ' sin precio'
+    : 'Sin menú cargado';
+
+  document.getElementById('mn-tabla').innerHTML = lista.length ? lista.map(p => {
+    const m = margenProducto(p);
+    const nGrupos = (p.grupos || []).length;
+    return '<tr' + (p.activo ? '' : ' class="prod-inactivo"') + '>' +
+      '<td><b>' + esc(p.nombre) + '</b>' + (p.pendiente ? '<span class="badge-pend" title="' + esc(p.nota) + '">pendiente</span>' : '') +
+        (p.nota ? '<div style="font-size:12px; color:var(--texto-suave)">' + esc(p.nota) + '</div>' : '') + '</td>' +
+      '<td style="font-size:13px">' + esc(p.subcategoria) +
+        (p.popularidad ? '<div style="font-size:11.5px; color:var(--texto-suave)" class="mono">' + p.popularidad + ' uds histórico</div>' : '') + '</td>' +
+      '<td class="num">' + (p.precio ? money(p.precio) : '<span style="color:var(--alerta)">sin precio</span>') + '</td>' +
+      '<td class="num">' + (p.costo ? money(p.costo) : '—') + '</td>' +
+      '<td class="num ' + claseMargen(m) + '">' + (m === null ? '—' : m.toFixed(0) + '%') + '</td>' +
+      '<td>' + (nGrupos ? '<span class="badge-grupos">' + nGrupos + ' grupo' + (nGrupos === 1 ? '' : 's') + '</span>' : '<span style="color:var(--texto-suave); font-size:12.5px">sin opciones</span>') + '</td>' +
+      '<td><button class="btn btn-outline btn-sm" data-ed="' + p.id + '">Editar</button> ' +
+          '<button class="btn-x" data-dup="' + p.id + '" title="Duplicar">⧉</button> ' +
+          '<button class="btn-x" data-del="' + p.id + '" title="Eliminar">🗑</button></td></tr>';
+  }).join('') : '<tr><td colspan="7" class="vacio-msg">' +
+      (total ? 'Ningún producto con esos filtros' : 'Aún no hay menú. Usa “Cargar menú base” para partir del documento del restaurante.') + '</td></tr>';
+}
+
+// Tarjetas de grupos de opciones
+function renderMenuGrupos(){
+  const usos = {};
+  menuEdit.productos.forEach(p => (p.grupos || []).forEach(g => usos[g] = (usos[g] || 0) + 1));
+  document.getElementById('mg-lista').innerHTML = menuEdit.grupos.length ? menuEdit.grupos.map(g => {
+    const n = (g.opciones || []).length, u = usos[g.id] || 0;
+    return '<div class="grupo-card" data-g="' + esc(g.id) + '">' +
+      '<div class="grupo-head" data-toggle="' + esc(g.id) + '">' +
+        '<b>' + esc(g.nombre) + '</b>' +
+        '<span class="meta">' + n + ' opcion' + (n === 1 ? '' : 'es') + ' · ' +
+          (g.obligatorio ? 'obligatorio' : 'opcional') + ' · ' +
+          (g.tipo === 'multiple' ? 'selección múltiple' : 'selección única') + ' · ' +
+          'usado en ' + u + ' producto' + (u === 1 ? '' : 's') + '</span>' +
+        '<span class="acciones"><button class="btn-x" data-gdel="' + esc(g.id) + '" title="Eliminar grupo">🗑</button></span>' +
+      '</div>' +
+      '<div class="grupo-body">' +
+        '<div class="opcion-fila">' +
+          '<div class="campo" style="flex:1; margin:0"><label>Nombre del grupo</label><input type="text" value="' + esc(g.nombre) + '" data-gn="' + esc(g.id) + '"></div>' +
+          '<div class="campo" style="margin:0"><label>Selección</label><select data-gt="' + esc(g.id) + '">' +
+            '<option value="unica"' + (g.tipo !== 'multiple' ? ' selected' : '') + '>Única</option>' +
+            '<option value="multiple"' + (g.tipo === 'multiple' ? ' selected' : '') + '>Múltiple</option></select></div>' +
+          '<div class="campo" style="margin:0"><label>¿Obligatorio?</label>' +
+            '<div class="toggle' + (g.obligatorio ? ' on' : '') + '" data-go="' + esc(g.id) + '" style="transform:scale(.9)"><span class="pista"></span></div></div>' +
+        '</div>' +
+        '<div style="border-top:1px solid var(--gris-claro); margin:var(--e2) 0 var(--e1)"></div>' +
+        '<div class="opcion-fila" style="font-weight:600; color:var(--gris-osc); font-size:12px">' +
+          '<span style="flex:1; min-width:150px">OPCIÓN</span><span style="width:110px">PRECIO EXTRA</span>' +
+          '<span style="width:110px">COSTO EXTRA</span><span style="width:60px">ACTIVA</span><span style="width:34px"></span></div>' +
+        (g.opciones || []).map(o =>
+          '<div class="opcion-fila">' +
+            '<input type="text" value="' + esc(o.nombre) + '" data-on="' + esc(g.id) + '|' + o.id + '">' +
+            '<input type="number" step="0.5" value="' + (o.precioExtra || 0) + '" data-op="' + esc(g.id) + '|' + o.id + '">' +
+            '<input type="number" step="0.5" value="' + (o.costoExtra || 0) + '" data-oc="' + esc(g.id) + '|' + o.id + '">' +
+            '<div class="toggle' + (o.activo ? ' on' : '') + '" data-oa="' + esc(g.id) + '|' + o.id + '" style="transform:scale(.8)"><span class="pista"></span></div>' +
+            '<button class="btn-x" data-od="' + esc(g.id) + '|' + o.id + '" title="Quitar">×</button>' +
+          '</div>').join('') +
+        '<button class="btn btn-outline btn-sm" data-oadd="' + esc(g.id) + '" style="margin-top:var(--e1)">+ Opción</button>' +
+      '</div></div>';
+  }).join('') : '<div class="card"><p class="vacio-msg" style="padding:var(--e3)">Aún no hay grupos de opciones. Crea uno o carga el menú base.</p></div>';
+}
+
+/* ---------- Editor de producto (modal) ---------- */
+// Abre el modal; sin id crea un producto nuevo
+function abrirProducto(id){
+  mpEditandoId = id;
+  const p = id ? menuEdit.productos.find(x => x.id === id)
+               : { nombre:'', categoria:CATEGORIAS_MENU[0], subcategoria:SUBCATEGORIAS[CATEGORIAS_MENU[0]][0],
+                   precio:0, costo:0, activo:true, pendiente:false, nota:'', grupos:[] };
+  document.getElementById('mp-titulo').textContent = id ? 'Editar producto' : 'Nuevo producto';
+  document.getElementById('mp-nombre').value = p.nombre;
+  document.getElementById('mp-cat').innerHTML = CATEGORIAS_MENU.map(ct =>
+    '<option' + (ct === p.categoria ? ' selected' : '') + '>' + esc(ct) + '</option>').join('');
+  pintarSubcats(p.categoria, p.subcategoria);
+  document.getElementById('mp-precio').value = p.precio || '';
+  document.getElementById('mp-costo').value = p.costo || '';
+  marcarToggle('mp-activo', p.activo, 'Activo', 'Inactivo');
+  marcarToggle('mp-pend', p.pendiente, 'Sí', 'No');
+  document.getElementById('mp-nota').value = p.nota || '';
+  document.getElementById('mp-grupos').innerHTML = menuEdit.grupos.length ? menuEdit.grupos.map(g =>
+    '<label><input type="checkbox" value="' + esc(g.id) + '"' + ((p.grupos || []).includes(g.id) ? ' checked' : '') + '>' +
+    esc(g.nombre) + '<span class="g-meta">' + (g.opciones || []).length + ' opciones · ' +
+    (g.obligatorio ? 'obligatorio' : 'opcional') + '</span></label>').join('')
+    : '<p style="font-size:13px; color:var(--texto-suave); margin:6px">Todavía no hay grupos de opciones definidos.</p>';
+  actualizarMargenModal();
+  document.getElementById('mp-fondo').classList.add('visible');
+  setTimeout(() => document.getElementById('mp-nombre').focus(), 60);
+}
+// Rellena el select de subcategorías según la categoría elegida
+function pintarSubcats(cat, sel){
+  const subs = SUBCATEGORIAS[cat] || [];
+  document.getElementById('mp-sub').innerHTML = subs.map(s =>
+    '<option' + (s === sel ? ' selected' : '') + '>' + esc(s) + '</option>').join('');
+}
+// Pinta un toggle visual con su texto de estado
+function marcarToggle(id, on, txtOn, txtOff){
+  const t = document.getElementById(id);
+  t.classList.toggle('on', !!on);
+  t.setAttribute('aria-checked', !!on);
+  const e = t.querySelector('.estado');
+  if (e) e.textContent = on ? txtOn : txtOff;
+}
+// Muestra el margen en vivo mientras se editan precio y costo
+function actualizarMargenModal(){
+  const precio = parseFloat(document.getElementById('mp-precio').value) || 0;
+  const costo  = parseFloat(document.getElementById('mp-costo').value) || 0;
+  const el = document.getElementById('mp-margen');
+  if (!precio || !costo){ el.textContent = '— (captura precio y costo para calcularlo)'; el.className = 'mono margen-na'; return; }
+  const m = (precio - costo) / precio * 100;
+  el.textContent = m.toFixed(1) + '% · utilidad de ' + money(precio - costo) + ' por unidad';
+  el.className = 'mono ' + claseMargen(m);
+}
+// Cierra el modal sin guardar
+function cerrarProducto(){ document.getElementById('mp-fondo').classList.remove('visible'); mpEditandoId = null; }
+// Valida y guarda el producto en la copia de trabajo
+function guardarProducto(){
+  const nombre = document.getElementById('mp-nombre').value.trim();
+  if (!nombre){ toast('El producto necesita un nombre', 'alerta'); return; }
+  const datos = {
+    nombre,
+    categoria: document.getElementById('mp-cat').value,
+    subcategoria: document.getElementById('mp-sub').value,
+    precio: parseFloat(document.getElementById('mp-precio').value) || 0,
+    costo: parseFloat(document.getElementById('mp-costo').value) || 0,
+    activo: document.getElementById('mp-activo').classList.contains('on'),
+    pendiente: document.getElementById('mp-pend').classList.contains('on'),
+    nota: document.getElementById('mp-nota').value.trim(),
+    grupos: [...document.querySelectorAll('#mp-grupos input:checked')].map(i => i.value)
+  };
+  if (mpEditandoId){
+    const p = menuEdit.productos.find(x => x.id === mpEditandoId);
+    Object.assign(p, datos);   // conserva popularidad y demás campos no editables
+  } else {
+    menuEdit.productos.push(Object.assign({ id: uuid() }, datos));
+  }
+  tocarMenu(); cerrarProducto(); renderMenuProductos();
+  toast('✓ Producto guardado en la copia de trabajo · recuerda “Guardar menú”', 'exito');
+}
+
+/* ---------- Guardado y sincronización ---------- */
+// Persiste el menú y lo comparte con todos los dispositivos
+function guardarMenu(){
+  const vacios = menuEdit.productos.filter(p => !p.nombre.trim());
+  if (vacios.length){ toast('Hay ' + vacios.length + ' producto(s) sin nombre', 'alerta'); return; }
+  setMenu(menuEdit);
+  mnSinGuardar = false;
+  ['mn-msg','mg-msg'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e){ e.className = 'msg-ok'; e.textContent = '✓ Menú guardado'; setTimeout(() => { e.textContent = ''; e.className = ''; }, 3000); }
+  });
+  if (fbListo){
+    fdb.collection('estado').doc('menu').set(getMenu())
+      .then(() => toast('✓ Menú compartido con todos los dispositivos', 'exito'))
+      .catch(() => toast('Menú guardado localmente; se compartirá al volver la conexión', 'alerta'));
+  }
+}
+
+/* ---------- Eventos de la vista Menú ---------- */
+document.getElementById('menu-subtabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  mnSubtab = b.dataset.mt;
+  document.querySelectorAll('#menu-subtabs button').forEach(x => x.classList.toggle('activo', x === b));
+  renderMenu();
+});
+document.getElementById('mn-buscar').addEventListener('input', e => { mnBuscar = e.target.value; renderMenuProductos(); });
+document.getElementById('mn-cats').addEventListener('click', e => {
+  const b = e.target.closest('[data-cat]'); if (!b) return;
+  mnCat = b.dataset.cat; mnSub = ''; renderMenuProductos();
+});
+document.getElementById('mn-subs').addEventListener('click', e => {
+  const b = e.target.closest('[data-sub]'); if (!b) return;
+  mnSub = b.dataset.sub; renderMenuProductos();
+});
+document.getElementById('mn-nuevo').addEventListener('click', () => abrirProducto(null));
+document.getElementById('mn-guardar').addEventListener('click', guardarMenu);
+document.getElementById('mg-guardar').addEventListener('click', guardarMenu);
+document.getElementById('mn-semilla').addEventListener('click', async () => {
+  const ok = await confirmar('¿Cargar el menú base?',
+    'Se reemplazará la copia en pantalla con ' + PRODUCTOS_SEMILLA.length + ' productos y ' + GRUPOS_SEMILLA.length +
+    ' grupos de opciones tomados del documento del restaurante, sin precios y con sus pendientes de validación marcados. Después pulsa “Guardar menú”.');
+  if (!ok) return;
+  menuEdit = construirMenuSemilla();
+  tocarMenu(); renderMenu();
+  toast('Menú base cargado — revisa, pon precios y guarda', 'exito');
+});
+// Acciones sobre la tabla de productos
+document.getElementById('mn-tabla').addEventListener('click', async e => {
+  const ed = e.target.closest('[data-ed]');
+  if (ed){ abrirProducto(ed.dataset.ed); return; }
+  const dup = e.target.closest('[data-dup]');
+  if (dup){
+    const p = menuEdit.productos.find(x => x.id === dup.dataset.dup);
+    const copia = JSON.parse(JSON.stringify(p));
+    copia.id = uuid(); copia.nombre = p.nombre + ' (copia)';
+    menuEdit.productos.push(copia); tocarMenu(); renderMenuProductos();
+    toast('Producto duplicado', 'exito');
+    return;
+  }
+  const del = e.target.closest('[data-del]');
+  if (del){
+    const p = menuEdit.productos.find(x => x.id === del.dataset.del);
+    const ok = await confirmar('¿Eliminar "' + p.nombre + '"?',
+      'Se quita del menú. El historial de ventas no se modifica. Si solo quieres dejar de ofrecerlo, desactívalo desde Editar.');
+    if (!ok) return;
+    menuEdit.productos = menuEdit.productos.filter(x => x.id !== del.dataset.del);
+    tocarMenu(); renderMenuProductos();
+  }
+});
+// Modal de producto
+document.getElementById('mp-cancelar').addEventListener('click', cerrarProducto);
+document.getElementById('mp-ok').addEventListener('click', guardarProducto);
+document.getElementById('mp-fondo').addEventListener('click', e => { if (e.target.id === 'mp-fondo') cerrarProducto(); });
+document.getElementById('mp-cat').addEventListener('change', e => pintarSubcats(e.target.value, ''));
+document.getElementById('mp-precio').addEventListener('input', actualizarMargenModal);
+document.getElementById('mp-costo').addEventListener('input', actualizarMargenModal);
+['mp-activo','mp-pend'].forEach(id => {
+  const t = document.getElementById(id);
+  t.addEventListener('click', () => {
+    const on = !t.classList.contains('on');
+    marcarToggle(id, on, id === 'mp-activo' ? 'Activo' : 'Sí', id === 'mp-activo' ? 'Inactivo' : 'No');
+  });
+});
+// Edición de grupos y opciones
+document.getElementById('mg-nuevo').addEventListener('click', () => {
+  menuEdit.grupos.push({ id:'g-' + uuid().slice(0,8), nombre:'Nuevo grupo', tipo:'unica', obligatorio:false,
+    opciones:[{ id: uuid(), nombre:'Opción 1', precioExtra:0, costoExtra:0, activo:true }] });
+  tocarMenu(); renderMenuGrupos();
+});
+document.getElementById('mg-lista').addEventListener('click', async e => {
+  const tog = e.target.closest('.grupo-head[data-toggle]');
+  if (tog && !e.target.closest('[data-gdel]')){ tog.parentElement.classList.toggle('abierto'); return; }
+  const gdel = e.target.closest('[data-gdel]');
+  if (gdel){
+    const id = gdel.dataset.gdel;
+    const usados = menuEdit.productos.filter(p => (p.grupos || []).includes(id)).length;
+    const ok = await confirmar('¿Eliminar este grupo?',
+      usados ? 'Lo usan ' + usados + ' producto(s); se quitará de todos ellos.' : 'No lo usa ningún producto.');
+    if (!ok) return;
+    menuEdit.grupos = menuEdit.grupos.filter(g => g.id !== id);
+    menuEdit.productos.forEach(p => { p.grupos = (p.grupos || []).filter(x => x !== id); });
+    tocarMenu(); renderMenuGrupos();
+    return;
+  }
+  const oadd = e.target.closest('[data-oadd]');
+  if (oadd){
+    const g = menuEdit.grupos.find(x => x.id === oadd.dataset.oadd);
+    g.opciones.push({ id: uuid(), nombre:'', precioExtra:0, costoExtra:0, activo:true });
+    tocarMenu(); renderMenuGrupos();
+    document.querySelector('.grupo-card[data-g="' + g.id + '"]').classList.add('abierto');
+    return;
+  }
+  const od = e.target.closest('[data-od]');
+  if (od){
+    const [gid, oid] = od.dataset.od.split('|');
+    const g = menuEdit.grupos.find(x => x.id === gid);
+    g.opciones = g.opciones.filter(o => o.id !== oid);
+    tocarMenu(); renderMenuGrupos();
+    document.querySelector('.grupo-card[data-g="' + gid + '"]').classList.add('abierto');
+    return;
+  }
+  const oa = e.target.closest('[data-oa]');
+  if (oa){
+    const [gid, oid] = oa.dataset.oa.split('|');
+    const o = menuEdit.grupos.find(x => x.id === gid).opciones.find(x => x.id === oid);
+    o.activo = !o.activo; oa.classList.toggle('on'); tocarMenu();
+    return;
+  }
+  const go = e.target.closest('[data-go]');
+  if (go){
+    const g = menuEdit.grupos.find(x => x.id === go.dataset.go);
+    g.obligatorio = !g.obligatorio; go.classList.toggle('on'); tocarMenu();
+  }
+});
+document.getElementById('mg-lista').addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.gn){ menuEdit.grupos.find(g => g.id === t.dataset.gn).nombre = t.value; tocarMenu(); return; }
+  const campos = [['on','nombre','txt'],['op','precioExtra','num'],['oc','costoExtra','num']];
+  for (const [attr, prop, tipo] of campos){
+    if (t.dataset[attr]){
+      const [gid, oid] = t.dataset[attr].split('|');
+      const o = menuEdit.grupos.find(x => x.id === gid).opciones.find(x => x.id === oid);
+      o[prop] = tipo === 'num' ? (parseFloat(t.value) || 0) : t.value;
+      tocarMenu(); return;
+    }
+  }
+});
+document.getElementById('mg-lista').addEventListener('change', e => {
+  if (e.target.dataset.gt){
+    menuEdit.grupos.find(g => g.id === e.target.dataset.gt).tipo = e.target.value;
+    tocarMenu(); renderMenuGrupos();
+  }
+});
+
 /* ============================================================
    INICIALIZACIÓN
    ============================================================ */
@@ -3044,6 +3770,11 @@ function sembrarDatos(){
 function iniciarApp(){
   document.getElementById('app').style.display = 'block';
   construirNav();
+  // Artículo libre sin precio de origen: reservado al administrador
+  const btnLibre = document.getElementById('btn-linea-blanco');
+  if (btnLibre) btnLibre.style.display = puedeEditarPrecios() ? '' : 'none';
+  const avisoP = document.getElementById('aviso-precios');
+  if (avisoP) avisoP.style.display = puedeEditarPrecios() ? 'none' : '';
   limpiarComanda();
   limpiarEgreso();
   actualizarBadgeSync();
